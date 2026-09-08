@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cronograma de Actividades</title>
+<style>
+:root{
+  --primary:#182848; --secondary:#4b6cb7; --bg:#f4f6fa;
+  --card:#fff; --text:#20242a; --muted:#707782;
+  --pending:#f59e0b; --progress:#3b82f6; --done:#10b981;
+  --border:#e4e7ec;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,var(--primary),var(--secondary));color:white;padding:34px 22px}
+.container{max-width:1150px;margin:auto}
+h1{margin:0 0 8px;font-size:clamp(28px,5vw,42px)}
+.subtitle{margin:0;opacity:.85}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}
+button,.file-label{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer}
+.filter{background:white;color:var(--primary);border:1px solid var(--border)}
+.filter.active{background:var(--primary);color:white}
+main{padding:25px 18px 50px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.stat strong{display:block;font-size:25px}.stat span{color:var(--muted);font-size:13px}
+.timeline{position:relative}
+.timeline:before{content:"";position:absolute;left:20px;top:10px;bottom:10px;width:3px;background:#d9deea}
+.activity{position:relative;margin:0 0 18px 0;padding-left:54px}
+.dot{position:absolute;left:11px;top:22px;width:21px;height:21px;border-radius:50%;background:var(--secondary);border:4px solid var(--bg);z-index:1}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 3px 12px #0000000b}
+.card-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start;padding:19px}
+.date{font-size:13px;font-weight:800;color:var(--secondary);margin-bottom:5px}
+.title{font-size:20px;font-weight:800;margin:0 0 7px}
+.responsible{color:var(--muted);font-size:14px}
+.badge{font-size:12px;padding:6px 10px;border-radius:20px;font-weight:800;white-space:nowrap}
+.pending{background:#fff3d6;color:#a16207}.progress{background:#dbeafe;color:#1d4ed8}.done{background:#d1fae5;color:#047857}
+.details{border-top:1px solid var(--border);padding:18px 19px;display:none}
+.card.open .details{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.section-title{font-size:13px;font-weight:800;margin-bottom:9px;text-transform:uppercase;color:var(--muted)}
+.notes{width:100%;min-height:80px;border:1px solid var(--border);border-radius:10px;padding:10px;resize:vertical;font:inherit}
+.files{display:flex;flex-direction:column;gap:8px}
+.file-row{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border);padding:9px 11px;border-radius:10px}
+.file-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.file-actions{display:flex;gap:5px}.file-actions button{padding:6px 9px;font-size:12px}
+.add{background:var(--primary);color:white}
+.delete{background:#fee2e2;color:#b91c1c}
+.empty{color:var(--muted);font-size:14px}
+.card-foot{display:flex;justify-content:flex-end;gap:8px;padding:0 19px 17px}
+.toggle{background:#eef2ff;color:#3730a3}
+select{border:1px solid var(--border);border-radius:9px;padding:8px;background:white}
+.help{background:white;border:1px dashed #b9c2d0;padding:16px;border-radius:14px;margin-bottom:20px;color:#555}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}
+.modal.show{display:flex}.modal-box{background:white;width:min(560px,100%);border-radius:18px;padding:24px;box-shadow:0 20px 60px #0005}
+.modal-box h2{margin-top:0}.form-grid{display:grid;gap:13px}.form-grid label{font-size:13px;font-weight:800;color:#555}
+.form-grid input,.form-grid select{width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;font:inherit;margin-top:5px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.cancel{background:#eef1f5;color:#444}
+@media(max-width:700px){
+ .stats{grid-template-columns:repeat(2,1fr)}
+ .detail-grid{grid-template-columns:1fr}
+ .card-head{flex-direction:column}
+ .activity{padding-left:45px}.timeline:before{left:14px}.dot{left:5px}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header>
+  <div class="container">
+    <h1>📅 Cronograma de Actividades</h1>
+    <p class="subtitle">Planificación, responsables y archivos de cada actividad</p>
+  </div>
+</header>
+
+<main class="container">
+  <div class="toolbar">
+    <button class="add" onclick="openActivityModal()">＋ Nueva actividad</button>
+    <button class="filter active" data-filter="all">Todas</button>
+    <button class="filter" data-filter="pending">Pendientes</button>
+    <button class="filter" data-filter="progress">En preparación</button>
+    <button class="filter" data-filter="done">Completadas</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><strong id="total">0</strong><span>Actividades</span></div>
+    <div class="stat"><strong id="pendingCount">0</strong><span>Pendientes</span></div>
+    <div class="stat"><strong id="progressCount">0</strong><span>En preparación</span></div>
+    <div class="stat"><strong id="doneCount">0</strong><span>Completadas</span></div>
+  </div>
+
+  <div class="help">
+    <b>💡 Cómo usarlo:</b> abre una actividad para ver sus detalles. Ahora los datos, archivos y notas se sincronizan globalmente gracias a Supabase.
+  </div>
+
+  <section id="timeline" class="timeline"></section>
+</main>
+
+<div class="modal" id="activityModal">
+ <div class="modal-box">
+  <h2 id="modalTitle">Nueva actividad</h2>
+  <div class="form-grid">
+   <div><label>Actividad</label><input id="fTitle" placeholder="Nombre de la actividad"></div>
+   <div><label>Fecha</label><input id="fDate" placeholder="Ej. 12/10/2026 o 12–14/10/2026"></div>
+   <div><label>Responsable(s)</label><input id="fResponsible" placeholder="Nombre del responsable"></div>
+   <div><label>Estado</label><select id="fStatus"><option value="pending">Pendiente</option><option value="progress">En preparación</option><option value="done">Completada</option></select></div>
+  </div>
+  <div class="modal-actions">
+   <button class="cancel" onclick="closeActivityModal()">Cancelar</button>
+   <button class="add" onclick="saveActivity()">Guardar actividad</button>
+  </div>
+ </div>
+</div>
+
+<script>
+const { createClient } = supabase;
+const supabaseUrl = 'https://kakbjyjonxtbhobeiblv.supabase.co';
+const supabaseKey = 'sb_publishable_BiXNML_8PgA2x6pd6UPWWg_EGJ8tMUW';
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+let activities = [];
+let filesData = {};
+const statusText={pending:"Pendiente",progress:"En preparación",done:"Completada"};
+let currentFilter="all";
+let editingId=null;
+
+async function fetchData(){
+  const { data: acts } = await supabaseClient.from('cronograma_actividades').select('*').order('id', { ascending: true });
+  if(acts) activities = acts;
+  const { data: files } = await supabaseClient.from('cronograma_archivos').select('*');
+  filesData = {};
+  if(files){
+    files.forEach(f => {
+      if(!filesData[f.activity_id]) filesData[f.activity_id] = [];
+      filesData[f.activity_id].push(f);
+    });
+  }
+  render();
+}
+
+supabaseClient.channel('realtime_sync')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma_actividades' }, payload => fetchData())
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma_archivos' }, payload => fetchData())
+  .subscribe();
+
+function openActivityModal(id=null){
+ editingId=id;
+ const a=id?activities.find(x=>x.id===id):null;
+ document.getElementById("modalTitle").textContent=a?"Editar actividad":"Nueva actividad";
+ document.getElementById("fTitle").value=a?.title||"";
+ document.getElementById("fDate").value=a?.date||"";
+ document.getElementById("fResponsible").value=a?.responsible||"";
+ document.getElementById("fStatus").value=a?.status||"pending";
+ document.getElementById("activityModal").classList.add("show");
+}
+
+function closeActivityModal(){document.getElementById("activityModal").classList.remove("show");}
+
+async function saveActivity(){
+ const title=document.getElementById("fTitle").value.trim();
+ const date=document.getElementById("fDate").value.trim();
+ const responsible=document.getElementById("fResponsible").value.trim();
+ const status=document.getElementById("fStatus").value;
+ if(!title||!date||!responsible){alert("Completa actividad, fecha y responsable.");return;}
+ 
+ if(editingId){
+   await supabaseClient.from('cronograma_actividades').update({title, date, responsible, status}).eq('id', editingId);
+ } else {
+   await supabaseClient.from('cronograma_actividades').insert([{title, date, responsible, status}]);
+ }
+ closeActivityModal();
+}
+
+function editActivity(id){openActivityModal(id);}
+
+async function deleteActivity(id){
+ const a=activities.find(x=>x.id===id);
+ if(!a)return;
+ if(confirm(`¿Eliminar "${a.title}"? Esta acción no se puede deshacer.`)){
+   await supabaseClient.from('cronograma_actividades').delete().eq('id', id);
+ }
+}
+
+function activityDateValue(a){
+ const m = String(a.date).match(/(\d{1,2})\D+(\d{1,2})(?:\D+(\d{2,4}))?/);
+ if(!m) return Number.MAX_SAFE_INTEGER;
+ const day = Number(m[1]), month = Number(m[2]);
+ let year = m[3] ? Number(m[3]) : new Date().getFullYear();
+ if(year < 100) year += 2000;
+ return new Date(year, month-1, day).getTime();
+}
+
+function render(){
+ const box=document.getElementById("timeline"); box.innerHTML="";
+ let shown=activities.filter(a=>currentFilter==="all"||a.status===currentFilter);
+ shown.sort((a,b)=>activityDateValue(a)-activityDateValue(b));
+ shown.forEach(a=>{
+  const fList = filesData[a.id] || [];
+  const notesContent = a.notes || "";
+  const el=document.createElement("article");
+  el.className="activity";
+  el.innerHTML=`
+   <div class="dot"></div>
+   <div class="card" id="card-${a.id}">
+    <div class="card-head">
+     <div>
+      <div class="date">${a.date}</div>
+      <h2 class="title">${a.title}</h2>
+      <div class="responsible">👤 <b>Responsable:</b> ${a.responsible}</div>
+     </div>
+     <span class="badge ${a.status}">${statusText[a.status]}</span>
+    </div>
+    <div class="details">
+     <div class="detail-grid">
+      <div>
+       <div class="section-title">Estado</div>
+       <select onchange="changeStatus(${a.id},this.value)">
+        <option value="pending" ${a.status==="pending"?"selected":""}>Pendiente</option>
+        <option value="progress" ${a.status==="progress"?"selected":""}>En preparación</option>
+        <option value="done" ${a.status==="done"?"selected":""}>Completada</option>
+       </select>
+       <div class="section-title" style="margin-top:18px">Observaciones</div>
+       <textarea class="notes" placeholder="Escribe aquí pendientes, ideas, tareas...">${escapeHtml(notesContent)}</textarea>
+       <button class="add" style="margin-top:8px" onclick="saveNotes(${a.id},this)">Guardar notas</button>
+      </div>
+      <div>
+       <div class="section-title">Archivos correspondientes</div>
+       <div class="files" id="files-${a.id}">
+        ${fileHTML(a,fList)}
+       </div>
+       <label class="file-label add" style="display:inline-block;margin-top:10px">
+        📎 Agregar archivo
+        <input type="file" multiple hidden onchange="addFiles(${a.id},this)">
+       </label>
+      </div>
+     </div>
+    </div>
+    <div class="card-foot">
+      <button class="toggle" onclick="toggle(${a.id},this)">Ver archivos y detalles ▾</button>
+      <button class="toggle" onclick="editActivity(${a.id})">✏️ Editar</button>
+      <button class="delete" onclick="deleteActivity(${a.id})">🗑️ Eliminar</button>
+    </div>
+   </div>
+  `;
+  box.appendChild(el);
+ });
+ updateStats();
+}
+
+function escapeHtml(s){
+ return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+function fileHTML(a,files){
+ if(!files.length)return '<div class="empty">No hay archivos asociados todavía.</div>';
+ return files.map(f=>`
+  <div class="file-row">
+   <span class="file-name">📄 ${escapeHtml(f.name)}</span>
+   <div class="file-actions">
+    <button class="toggle" onclick="downloadFile('${f.path}')">Abrir</button>
+    <button class="delete" onclick="removeFile(${f.id}, '${f.path}')">Eliminar</button>
+   </div>
+  </div>`).join("");
+}
+
+function toggle(id,btn){
+ const card=document.getElementById("card-"+id);
+ card.classList.toggle("open");
+ btn.textContent=card.classList.contains("open")?"Ocultar detalles ▴":"Ver archivos y detalles ▾";
+}
+
+async function changeStatus(id,status){
+ await supabaseClient.from('cronograma_actividades').update({status}).eq('id', id);
+}
+
+async function saveNotes(id,btn){
+ const card=document.getElementById("card-"+id);
+ const notes=card.querySelector(".notes").value;
+ await supabaseClient.from('cronograma_actividades').update({notes}).eq('id', id);
+ btn.textContent="✓ Guardado";
+ setTimeout(()=>btn.textContent="Guardar notas",1200);
+}
+
+async function addFiles(id,input){
+ const files=Array.from(input.files);
+ for(let file of files){
+   const fileExt = file.name.split('.').pop();
+   const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+   const { error } = await supabaseClient.storage.from('cronograma-archivos').upload(fileName, file);
+   if(!error){
+     await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
+   }
+ }
+ input.value="";
+}
+
+async function downloadFile(path){
+ const { data } = supabaseClient.storage.from('cronograma-archivos').getPublicUrl(path);
+ if(data) window.open(data.publicUrl, '_blank');
+}
+
+async function removeFile(fileId, path){
+ if(confirm("¿Seguro que quieres eliminar este archivo?")){
+   await supabaseClient.storage.from('cronograma-archivos').remove([path]);
+   await supabaseClient.from('cronograma_archivos').delete().eq('id', fileId);
+ }
+}
+
+function updateStats(){
+ document.getElementById("total").textContent=activities.length;
+ document.getElementById("pendingCount").textContent=activities.filter(a=>a.status==="pending").length;
+ document.getElementById("progressCount").textContent=activities.filter(a=>a.status==="progress").length;
+ document.getElementById("doneCount").textContent=activities.filter(a=>a.status==="done").length;
+}
+
+document.querySelectorAll(".filter").forEach(btn=>{
+ btn.addEventListener("click",()=>{
+  document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active"); currentFilter=btn.dataset.filter; render();
+ });
+});
+
+document.getElementById("activityModal").addEventListener("click",e=>{if(e.target.id==="activityModal")closeActivityModal();});
+
+window.onload = fetchData;
+</script>
+</body>
+</html>
