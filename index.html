@@ -333,30 +333,44 @@ async function saveNotes(id,btn){
  btn.textContent="✓ Guardado";
  setTimeout(()=>btn.textContent="Guardar notas",1200);
 }
-async function addFiles(id,input){
- const files=Array.from(input.files);
- for(let file of files){
-   const fileExt = file.name.split('.').pop();
-   const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-   
-   // 1. Sube el archivo al Storage
-   const { error: uploadError } = await supabaseClient.storage.from('cronograma-archivos').upload(fileName, file);
-   
-   if(uploadError){
-     alert("Error al subir el archivo: " + uploadError.message);
-   } else {
-     // 2. Guarda el registro en la base de datos con el nombre original
-     const { error: dbError } = await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
-     
-     if(dbError) {
-        alert("Error al vincular en base de datos: " + dbError.message);
-     } else {
-        await fetchData(); // Refresca la pantalla
-        document.getElementById("card-"+id).classList.add("open"); // Mantiene la tarjeta abierta
-     }
-   }
- }
- input.value="";
+async function addFiles(id, input){
+  const files = Array.from(input.files);
+  if (files.length === 0) return;
+
+  // Cambiar el texto del botón temporalmente
+  const labelDiv = input.parentElement;
+  const originalText = labelDiv.innerHTML;
+  labelDiv.innerHTML = "⏳ Subiendo...";
+
+  try {
+    for(let file of files){
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      // Sube el archivo
+      const { error: uploadError } = await supabaseClient.storage.from('cronograma-archivos').upload(fileName, file);
+      
+      if(uploadError){
+        alert("Error al subir el archivo: " + uploadError.message);
+      } else {
+        // Guarda el registro
+        const { error: dbError } = await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
+        
+        if(dbError) {
+           alert("Error en base de datos: " + dbError.message);
+        }
+      }
+    }
+    await fetchData(); // Refresca los datos
+    const card = document.getElementById("card-"+id);
+    if(card) card.classList.add("open"); // Mantiene desplegada la tarjeta
+  } catch (err) {
+    alert("Fallo inesperado en el código: " + err.message);
+  } finally {
+    // Restaurar el botón a su estado normal
+    labelDiv.innerHTML = originalText;
+    input.value = "";
+  }
 }
 async function downloadFile(path){
  const { data } = supabaseClient.storage.from('cronograma-archivos').getPublicUrl(path);
