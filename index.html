@@ -103,7 +103,8 @@ select{border:1px solid var(--border);border-radius:9px;padding:8px;background:w
   <h2 id="modalTitle">Nueva actividad</h2>
   <div class="form-grid">
    <div><label>Actividad</label><input id="fTitle" placeholder="Nombre de la actividad"></div>
-   <div><label>Fecha</label><input id="fDate" placeholder="Ej. 12/10/2026 o 12–14/10/2026"></div>
+   <div><label>Fecha de inicio</label><input id="fDate" placeholder="Ej. 14/10/2026"></div>
+   <div><label>Sedes / Desglose de fechas</label><input id="fLocation" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
    <div><label>Responsable(s)</label><input id="fResponsible" placeholder="Nombre del responsable"></div>
    <div><label>Estado</label><select id="fStatus"><option value="pending">Pendiente</option><option value="progress">En preparación</option><option value="done">Completada</option></select></div>
   </div>
@@ -151,6 +152,7 @@ function openActivityModal(id=null){
  document.getElementById("modalTitle").textContent=a?"Editar actividad":"Nueva actividad";
  document.getElementById("fTitle").value=a?.title||"";
  document.getElementById("fDate").value=a?.date||"";
+ document.getElementById("fLocation").value=a?.location||"";
  document.getElementById("fResponsible").value=a?.responsible||"";
  document.getElementById("fStatus").value=a?.status||"pending";
  document.getElementById("activityModal").classList.add("show");
@@ -161,14 +163,15 @@ function closeActivityModal(){document.getElementById("activityModal").classList
 async function saveActivity(){
  const title=document.getElementById("fTitle").value.trim();
  const date=document.getElementById("fDate").value.trim();
+ const location=document.getElementById("fLocation").value.trim();
  const responsible=document.getElementById("fResponsible").value.trim();
  const status=document.getElementById("fStatus").value;
  if(!title||!date||!responsible){alert("Completa actividad, fecha y responsable.");return;}
  
  if(editingId){
-   await supabaseClient.from('cronograma_actividades').update({title, date, responsible, status}).eq('id', editingId);
+   await supabaseClient.from('cronograma_actividades').update({title, date, location, responsible, status}).eq('id', editingId);
  } else {
-   await supabaseClient.from('cronograma_actividades').insert([{title, date, responsible, status}]);
+   await supabaseClient.from('cronograma_actividades').insert([{title, date, location, responsible, status}]);
  }
  closeActivityModal();
 }
@@ -208,6 +211,7 @@ function render(){
      <div>
       <div class="date">${a.date}</div>
       <h2 class="title">${a.title}</h2>
+      ${a.location ? `<div class="responsible" style="margin-bottom:4px; color:var(--secondary)">📍 <b>Sedes:</b> ${a.location}</div>` : ''}
       <div class="responsible">👤 <b>Responsable:</b> ${a.responsible}</div>
      </div>
      <span class="badge ${a.status}">${statusText[a.status]}</span>
@@ -328,4 +332,3 @@ window.onload = fetchData;
 </script>
 </body>
 </html>
-
