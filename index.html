@@ -335,18 +335,21 @@ async function saveNotes(id,btn){
 }
 
 async function addFiles(id,input){
- const files=Array.from(input.files);
- for(let file of files){
-   const fileExt = file.name.split('.').pop();
-   const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-   const { error } = await supabaseClient.storage.from('cronograma-archivos').upload(fileName, file);
-   if(!error){
-     await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
-   }
- }
- input.value="";
+const files=Array.from(input.files);
+for(let file of files){
+const fileExt = file.name.split('.').pop();
+const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+const { error } = await supabaseClient.storage.from('cronograma-archivos').upload(fileName, file);
+if(error){
+alert("Error al subir: " + error.message);
+} else {
+await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
+await fetchData();
+document.getElementById("card-"+id).classList.add("open");
 }
-
+}
+input.value="";
+}
 async function downloadFile(path){
  const { data } = supabaseClient.storage.from('cronograma-archivos').getPublicUrl(path);
  if(data) window.open(data.publicUrl, '_blank');
