@@ -103,7 +103,12 @@ select{border:1px solid var(--border);border-radius:9px;padding:8px;background:w
   <h2 id="modalTitle">Nueva actividad</h2>
   <div class="form-grid">
    <div><label>Actividad</label><input id="fTitle" placeholder="Nombre de la actividad"></div>
-   <div><label>Fecha de inicio</label><input id="fDate" placeholder="Ej. 14/10/2026"></div>
+   
+   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+     <div><label>Fecha inicio</label><input type="date" id="fDateStart"></div>
+     <div><label>Fecha fin (opcional)</label><input type="date" id="fDateEnd"></div>
+   </div>
+   
    <div><label>Sedes / Desglose de fechas</label><input id="fLocation" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
    <div><label>Responsable(s)</label><input id="fResponsible" placeholder="Nombre del responsable"></div>
    <div><label>Estado</label><select id="fStatus"><option value="pending">Pendiente</option><option value="progress">En preparación</option><option value="done">Completada</option></select></div>
@@ -151,7 +156,26 @@ function openActivityModal(id=null){
  const a=id?activities.find(x=>x.id===id):null;
  document.getElementById("modalTitle").textContent=a?"Editar actividad":"Nueva actividad";
  document.getElementById("fTitle").value=a?.title||"";
- document.getElementById("fDate").value=a?.date||"";
+ 
+ let dateStartVal = "";
+ let dateEndVal = "";
+ if(a?.date){
+   const parts = a.date.split(' - ');
+   const d1 = parts[0];
+   const d2 = parts[1];
+   
+   if(d1){
+     const p1 = d1.split('/');
+     if(p1.length === 3) dateStartVal = `${p1[2]}-${p1[1].padStart(2, '0')}-${p1[0].padStart(2, '0')}`;
+   }
+   if(d2){
+     const p2 = d2.split('/');
+     if(p2.length === 3) dateEndVal = `${p2[2]}-${p2[1].padStart(2, '0')}-${p2[0].padStart(2, '0')}`;
+   }
+ }
+ document.getElementById("fDateStart").value=dateStartVal;
+ document.getElementById("fDateEnd").value=dateEndVal;
+ 
  document.getElementById("fLocation").value=a?.location||"";
  document.getElementById("fResponsible").value=a?.responsible||"";
  document.getElementById("fStatus").value=a?.status||"pending";
@@ -162,16 +186,39 @@ function closeActivityModal(){document.getElementById("activityModal").classList
 
 async function saveActivity(){
  const title=document.getElementById("fTitle").value.trim();
- const date=document.getElementById("fDate").value.trim();
+ 
+ let rawStart = document.getElementById("fDateStart").value;
+ let rawEnd = document.getElementById("fDateEnd").value;
+ let finalDate = "";
+
+ let d1Str = "";
+ if(rawStart){
+   const p = rawStart.split('-');
+   if(p.length === 3) d1Str = `${p[2]}/${p[1]}/${p[0]}`;
+ }
+ 
+ let d2Str = "";
+ if(rawEnd){
+   const p = rawEnd.split('-');
+   if(p.length === 3) d2Str = `${p[2]}/${p[1]}/${p[0]}`;
+ }
+
+ if(d1Str && d2Str && d1Str !== d2Str){
+   finalDate = `${d1Str} - ${d2Str}`;
+ } else if(d1Str) {
+   finalDate = d1Str;
+ }
+ 
  const location=document.getElementById("fLocation").value.trim();
  const responsible=document.getElementById("fResponsible").value.trim();
  const status=document.getElementById("fStatus").value;
- if(!title||!date||!responsible){alert("Completa actividad, fecha y responsable.");return;}
+ 
+ if(!title||!finalDate||!responsible){alert("Completa actividad, fecha de inicio y responsable.");return;}
  
  if(editingId){
-   await supabaseClient.from('cronograma_actividades').update({title, date, location, responsible, status}).eq('id', editingId);
+   await supabaseClient.from('cronograma_actividades').update({title, date: finalDate, location, responsible, status}).eq('id', editingId);
  } else {
-   await supabaseClient.from('cronograma_actividades').insert([{title, date, location, responsible, status}]);
+   await supabaseClient.from('cronograma_actividades').insert([{title, date: finalDate, location, responsible, status}]);
  }
  closeActivityModal();
 }
