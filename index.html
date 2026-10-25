@@ -684,7 +684,7 @@ function render(){
 
     <div class="card-foot">
       <button class="toggle" data-action="edit-activity" data-id="${id}">✏️ Editar Actividad</button>
-      <button class="delete" data-action="delete-activity" data-id="${id}">🗑️ Eliminar Actividad</button>
+      ${canDelete() ? `<button class="delete" data-action="delete-activity" data-id="${id}">🗑️ Eliminar Actividad</button>` : ''}
     </div>
    </div>
   `;
@@ -700,7 +700,7 @@ function fileHTML(a,files){
    <span class="file-name" title="${escapeHtml(f.name)}">📄 ${escapeHtml(f.name)}</span>
    <div class="file-actions">
     <button class="toggle" data-action="open-file" data-file-id="${Number(f.id)}">Abrir</button>
-    <button class="delete" data-action="remove-file" data-file-id="${Number(f.id)}">Eliminar</button>
+    ${canDelete() ? `<button class="delete" data-action="remove-file" data-file-id="${Number(f.id)}">Eliminar</button>` : ''}
    </div>
   </div>`).join("");
 }
