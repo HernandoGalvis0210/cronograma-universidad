@@ -27,14 +27,23 @@ Esta guía aplica `roles.sql` en tu proyecto de Supabase. Al terminar:
    - Si **no devuelve filas**, sigue al paso 2.
    - Si **devuelve filas**, son registros de archivos cuya actividad ya fue borrada. Anota sus `path`, borra esos archivos en **Storage → cronograma-archivos** (búscalos por nombre y elimínalos), y luego ejecuta la consulta **0.6** para borrar las filas. Si no las limpias, el script se detendrá con un mensaje y no aplicará nada.
 
-## Paso 2 — Crear los 3 usuarios
+## Paso 2 — Crear las 3 cuentas de revisor
+
+En la página, los revisores **no escriben un correo**: escriben un **Usuario** (`superior`, `académico` o `administración`; da igual si usan tildes o mayúsculas). La página lo convierte en un correo interno, así que en Supabase las cuentas deben llamarse **exactamente** así (sin tildes):
+
+| Usuario en la página | Email en Supabase Auth | Rol |
+|---|---|---|
+| superior | `superior@cronograma.local` | `superior` |
+| académico | `academico@cronograma.local` | `academico` |
+| administración | `administracion@cronograma.local` | `administracion` |
 
 1. Menú izquierdo: **Authentication → Users**.
 2. Pulsa **Add user → Create new user**.
-3. Escribe el **email** y una **contraseña** segura. Marca **Auto Confirm User** para que no necesite confirmar el correo.
-4. Pulsa **Create user**.
-5. Repite para los otros dos usuarios (uno por rol, por ejemplo).
-6. En la lista, haz clic en cada usuario y copia su **User UID** (un texto como `3f2a…-…`). Lo necesitarás en el paso 5.
+3. Escribe el **email** de la tabla y una **contraseña** segura (mínimo 12 caracteres). No la guardes en ningún archivo del proyecto; entrégala a la persona del cargo por un medio privado.
+4. Marca **Auto Confirm User**. Es obligatorio: `cronograma.local` no es un dominio real y nunca llegará un correo de confirmación.
+5. Pulsa **Create user** y repite con las otras dos cuentas.
+
+Cada cuenta corresponde a un **cargo**, no a una persona. Ver "Cambiar la persona de un cargo" más abajo.
 
 ## Paso 3 — Desactivar el registro público (Sign ups)
 
@@ -71,32 +80,60 @@ Si en los mensajes aparece `WARNING: Revisa la política de Storage "…"`, exis
 ## Paso 5 — Asignar los roles
 
 1. **SQL Editor → New query**.
-2. Pega esto, cambiando cada UUID por el **User UID** copiado en el paso 2, y el rol que corresponda:
+2. Pega esto tal cual (busca las cuentas por su email, no hace falta copiar UUIDs):
 
    ```sql
-   insert into public.perfiles (id, rol) values
-     ('UUID-DEL-USUARIO-1', 'superior'),
-     ('UUID-DEL-USUARIO-2', 'academico'),
-     ('UUID-DEL-USUARIO-3', 'administracion')
+   insert into public.perfiles (id, rol)
+   select id,
+          case email
+            when 'superior@cronograma.local'       then 'superior'
+            when 'academico@cronograma.local'      then 'academico'
+            when 'administracion@cronograma.local' then 'administracion'
+          end
+   from auth.users
+   where email in ('superior@cronograma.local', 'academico@cronograma.local', 'administracion@cronograma.local')
    on conflict (id) do update set rol = excluded.rol;
    ```
 
-3. Pulsa **Run**. Comprueba con la consulta **6.3** de `roles.sql`.
+3. Pulsa **Run**: debe decir `3 rows affected`. Comprueba con la consulta **6.3** de `roles.sql`.
 
-Para cambiar el rol de alguien, ejecuta lo mismo con el nuevo rol. Para quitárselo, usa la consulta **6.4**.
+Para quitarle el rol a una cuenta, usa la consulta **6.4**.
+
+## Cambiar la persona de un cargo
+
+Las cuentas son del **cargo** (superior, académico, administración), no de la persona. Cuando cambia quien ocupa un cargo **no se crea una cuenta nueva**: se cambia la contraseña de esa cuenta y se le entrega la nueva a la persona entrante.
+
+1. Si tu panel lo permite, en **Authentication → Users** abre la cuenta (por ejemplo `academico@cronograma.local`) y cámbiale la contraseña desde ahí.
+2. Si no aparece esa opción, en **SQL Editor → New query** ejecuta lo siguiente, escribiendo la contraseña nueva **solo en el editor** (nunca en un archivo del proyecto):
+
+   ```sql
+   update auth.users
+   set encrypted_password = extensions.crypt('ESCRIBE-AQUI-LA-NUEVA', extensions.gen_salt('bf')),
+       updated_at = now()
+   where email = 'academico@cronograma.local';
+   ```
+
+   Después **borra esa consulta** del SQL Editor (no la guardes como snippet), para que la contraseña no quede en el historial.
+3. **Cierra las sesiones abiertas de la persona saliente.** Cambiar la contraseña no cierra las sesiones que ya tenía iniciadas:
+
+   ```sql
+   delete from auth.sessions
+   where user_id = (select id from auth.users where email = 'academico@cronograma.local');
+   ```
+
+   Su acceso termina como mucho cuando caduque el token que ya tenía (1 hora por defecto).
+
+El rol no cambia: sigue en `perfiles` asociado a la cuenta.
 
 ## Paso 6 — Probar que un anónimo ya no puede borrar
 
-> Importante: hoy la página **no avisa** cuando Supabase rechaza un borrado. Supabase no devuelve error; simplemente borra 0 filas. Por eso hay que recargar para comprobarlo. Mostrar un mensaje claro será parte de la fase siguiente.
+> Sin sesión, la página **no muestra** los botones de eliminar. Además, si Supabase rechaza un borrado, la página lo avisa: Supabase no devuelve error, borra 0 filas, y la página lo detecta. Por eso la prueba de verdad se hace desde la consola, que se salta la interfaz.
 
 ### Prueba A — Desde la página (sin iniciar sesión)
 
-1. Abre el cronograma y crea una actividad llamada `PRUEBA ROLES`.
+1. Abre el cronograma **sin iniciar sesión** y crea una actividad llamada `PRUEBA ROLES`.
 2. Ábrela y sube un archivo cualquiera.
-3. Pulsa **Eliminar** en el archivo y acepta.
-4. Pulsa **🗑️ Eliminar Actividad** y acepta.
-5. **Recarga la página (F5)**. La actividad y su archivo **deben seguir ahí**.
-6. En el panel, **Storage → cronograma-archivos**: el archivo debe seguir ahí.
+3. Comprueba que **no aparecen** "🗑️ Eliminar Actividad" ni "Eliminar" en el archivo.
 
 ### Prueba B — Desde la consola del navegador (más precisa)
 
@@ -113,18 +150,15 @@ Para cambiar el rol de alguien, ejecuta lo mismo con el nuevo rol. Para quitárs
 
 Usa los bloques **6.5** (como anónimo: debe devolver 0 filas) y **6.6** (como usuario con rol: `es_revisor()` = true y 1 fila). Ambos terminan en `rollback`, así que no se borra nada.
 
-### Prueba D — Un usuario con rol sí puede borrar (opcional)
+### Prueba D — Un revisor sí puede borrar
 
-Todavía no hay pantalla de inicio de sesión. Se puede probar desde la consola (F12) de la página:
+1. Pulsa **🔐 Acceso revisores** en el encabezado.
+2. En **Usuario** escribe `académico` (o `superior` / `administración`; da igual tildes y mayúsculas) y su contraseña.
+3. En el encabezado debe aparecer la etiqueta del rol y **Cerrar sesión**, y en las tarjetas los botones de eliminar.
+4. Elimina el archivo y luego la actividad `PRUEBA ROLES`. Recarga: ya no deben estar, y el archivo tampoco en **Storage → cronograma-archivos**.
+5. Pulsa **Cerrar sesión**: los botones de eliminar desaparecen.
 
-```js
-await supabaseClient.auth.signInWithPassword({ email: 'correo@ejemplo.com', password: 'su-contraseña' })
-await supabaseClient.from('cronograma_actividades').delete().eq('id', 123).select()
-// Esperado: data con 1 fila. Luego cierra sesión:
-await supabaseClient.auth.signOut()
-```
-
-Usa la actividad `PRUEBA ROLES` para no borrar nada importante.
+Si sale "Usuario o contraseña incorrectos.", revisa que la cuenta se llame exactamente como en la tabla del paso 2 y que tenga **Auto Confirm User**. Si entras pero la etiqueta dice "Sin rol asignado", falta el paso 5.
 
 ---
 
@@ -132,9 +166,8 @@ Usa la actividad `PRUEBA ROLES` para no borrar nada importante.
 
 El script hace que `cronograma_archivos.activity_id` sea una clave foránea con **ON DELETE CASCADE**: al borrar una actividad, Supabase borra automáticamente sus **filas** en `cronograma_archivos`.
 
-**No borra los archivos del bucket** `cronograma-archivos`. Storage es un sistema aparte y Postgres no puede borrar archivos reales. En la siguiente fase, la página borrará primero los archivos del bucket y luego la actividad. Mientras tanto, si un revisor borra una actividad con archivos, esos archivos quedan en el bucket y hay que limpiarlos a mano desde **Storage**.
+**No borra los archivos del bucket** `cronograma-archivos`. Storage es un sistema aparte y Postgres no puede borrar archivos reales. Por eso la página, al eliminar una actividad, borra **primero** sus archivos del bucket y solo si eso funciona borra la actividad. Si alguien borra una actividad por otra vía (SQL, panel), sus archivos quedan en el bucket y hay que limpiarlos a mano desde **Storage**.
 
-## Pendiente (fases siguientes)
+## Pendiente
 
-- **Edición (UPDATE)**: sigue abierta para todos, incluido **borrar notas**, que técnicamente es una edición del campo `notes`. Está marcado con `TODO` en `roles.sql`.
-- **Página**: pantalla de inicio de sesión, mostrar u ocultar los botones de eliminar según el rol (leyendo `perfiles`), avisar cuando un borrado es rechazado y borrar del bucket los archivos de una actividad antes de eliminarla.
+- **Edición (UPDATE)**: sigue abierta para todos, incluido **borrar notas** y **cambiar estado**, que técnicamente son ediciones. Está marcado con `TODO` en `roles.sql`.

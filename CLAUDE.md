@@ -72,6 +72,9 @@ Cumplidas:
 
 En curso (rama `feature/roles`):
 6. Autenticación: modal "Acceso revisores" (`signInWithPassword`), sesión restaurada con `getSession` y `onAuthStateChange`. ✅ cliente.
+   - Se entra con **Usuario**, no correo: `superior`, `académico` o `administración` (`normalizeUser()` ignora tildes, mayúsculas y espacios). `reviewerEmail()` lo convierte en `<usuario>@cronograma.local`; un usuario desconocido no llega a Supabase y recibe el mismo "Usuario o contraseña incorrectos.".
+   - Cuentas en Supabase Auth: `superior@cronograma.local`, `academico@cronograma.local`, `administracion@cronograma.local`, creadas con "Auto Confirm User" (el dominio no recibe correo). Son cuentas por **cargo**: al cambiar la persona se cambia la contraseña y se cierran sus sesiones (pasos en `supabase/LEEME.md`).
+   - Nunca escribir contraseñas ni claves (`service_role`) en archivos del repo.
 7. Roles y permisos: `supabase/roles.sql` (hay que aplicarlo en el panel) + rol leído de `perfiles` en cada cambio de sesión. ✅ cliente.
 8. Restricción de eliminación: botones solo si `canDelete()`; la RLS es la que decide. Pendiente: decidir quién puede editar y borrar notas (UPDATE sigue abierto).
 
