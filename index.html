@@ -319,7 +319,7 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
   <h2 id="loginTitle">Acceso revisores</h2>
   <form id="loginForm" class="form-grid" novalidate>
    <p class="login-help">Solo para cuentas con rol de revisión. Ver y crear actividades o subir archivos no requiere iniciar sesión.</p>
-   <div><label for="loginEmail">Correo</label><input type="email" id="loginEmail" autocomplete="username" required></div>
+   <div><label for="loginUser">Usuario</label><input type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
    <div><label for="loginPassword">Contraseña</label><input type="password" id="loginPassword" autocomplete="current-password" required></div>
    <div id="loginError" class="form-error" role="alert" hidden></div>
    <div class="modal-actions">
@@ -396,7 +396,7 @@ function renderAuthArea(){
   }
   const label = currentRole ? roleText[currentRole] : "Sin rol asignado";
   area.innerHTML = `
-    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="${escapeHtml(currentSession.user.email)}">👤 ${escapeHtml(label)}</span>
+    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="Usuario: ${escapeHtml(String(currentSession.user.email || '').split('@')[0])}">👤 ${escapeHtml(label)}</span>
     <button type="button" class="auth-btn" id="logoutBtn">Cerrar sesión</button>`;
   document.getElementById("logoutBtn").addEventListener("click", logout);
 }
@@ -406,7 +406,7 @@ function openLoginModal(){
   document.getElementById("loginForm").reset();
   setLoginError("");
   document.getElementById("loginModal").classList.add("show");
-  document.getElementById("loginEmail").focus();
+  document.getElementById("loginUser").focus();
 }
 
 function closeLoginModal(){
@@ -421,10 +421,25 @@ function setLoginError(msg){
   el.hidden = !msg;
 }
 
+// Los revisores entran con un usuario; en Supabase Auth son cuentas
+// <usuario>@cronograma.local. "Académico", "ACADEMICO" y "academico" valen igual.
+const REVIEWER_USERS = ["superior", "academico", "administracion"];
+const LOGIN_DOMAIN = "@cronograma.local";
+const BAD_CREDENTIALS_MSG = "Usuario o contraseña incorrectos.";
+
+function normalizeUser(value){
+  return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+function reviewerEmail(value){
+  const user = normalizeUser(value);
+  return REVIEWER_USERS.includes(user) ? user + LOGIN_DOMAIN : null;
+}
+
 function loginErrorText(error){
   const msg = String(error?.message || "").toLowerCase();
   if(error?.status === 429 || msg.includes("rate limit")) return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
-  if(msg.includes("invalid login credentials")) return "Correo o contraseña incorrectos.";
+  if(msg.includes("invalid login credentials")) return BAD_CREDENTIALS_MSG;
   if(msg.includes("email not confirmed")) return "Esta cuenta aún no está confirmada. Pide a un administrador que la confirme.";
   if(msg.includes("failed to fetch") || msg.includes("network")) return "No se pudo conectar con el servidor. Revisa tu conexión.";
   return "No se pudo iniciar sesión. Inténtalo de nuevo.";
@@ -432,9 +447,16 @@ function loginErrorText(error){
 
 async function submitLogin(e){
   e.preventDefault();
-  const email = document.getElementById("loginEmail").value.trim();
+  const rawUser = document.getElementById("loginUser").value;
   const password = document.getElementById("loginPassword").value;
-  if(!email || !password){ setLoginError("Escribe tu correo y tu contraseña."); return; }
+  if(!rawUser.trim() || !password){ setLoginError("Escribe tu usuario y tu contraseña."); return; }
+  const email = reviewerEmail(rawUser);
+  if(!email){
+    // Mismo mensaje que unas credenciales incorrectas, sin consultar a Supabase.
+    setLoginError(BAD_CREDENTIALS_MSG);
+    document.getElementById("loginPassword").select();
+    return;
+  }
   const btn = document.getElementById("loginSubmit");
   btn.disabled = true;
   btn.textContent = "⏳ Ingresando...";
