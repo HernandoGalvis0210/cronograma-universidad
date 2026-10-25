@@ -13,7 +13,9 @@ No hay build ni dependencias locales. `supabase-js@2` se carga desde jsDelivr.
 ## Estructura de `index.html`
 
 - `<style>` (≈ líneas 7–222): variables CSS en `:root`, overrides en `body.dark-mode`, componentes y media queries (1024/768/480/390/360 px).
-- Splash institucional (≈ líneas 226–242). **La línea del `<img class="splash-logo">` contiene un PNG en base64 de ~475 KB: no imprimirla ni leerla completa** (usar `cut`/`awk` o leer por rangos que la excluyan).
+- Splash institucional (justo después de `<body>`). **La línea del `<img class="splash-logo">` contiene un PNG en base64 de ~475 KB: no imprimirla ni leerla completa** (usar `cut`/`awk` o leer por rangos que la excluyan).
+  - Tiempos en las constantes `TIEMPOS` (entrada 600 / permanencia 1200 / salida 700 ms) y `TIEMPOS_REDUCIDOS` (500 / 700 / 300 ms, solo fundido) del script del splash. Cuentan desde que el logo se decodifica (`logo.decode()`, máx. `ESPERA_MAX_LOGO`), nunca desde `load` ni Supabase.
+  - Con `prefers-reduced-motion` el splash **no se quita**: se muestra sin escalado. Al terminar se elimina del DOM; `splash-respaldo` (CSS) lo oculta a los 8 s si el script fallara. Es `aria-hidden`.
 - HTML: header, toolbar de filtros, stats, `#timeline`, modal `#activityModal`.
 - `<script>` principal: tema, cliente Supabase, `fetchData`, suscripción realtime, CRUD de actividades, notas y archivos, `render()`.
 
