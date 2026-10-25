@@ -70,7 +70,13 @@ Cumplidas:
 4. Splash institucional.
 5. Responsive + actividades completadas (la vista "Todas" oculta las `done`; filtro "Completadas").
 
-Pendientes (rama `feature/roles`):
-6. Autenticación (Supabase Auth).
-7. Roles y permisos (y políticas RLS acordes en Supabase).
-8. Restricción de eliminación (actividades, archivos y notas solo para roles autorizados, aplicada también en RLS/Storage, no solo ocultando botones).
+En curso (rama `feature/roles`):
+6. Autenticación: modal "Acceso revisores" (`signInWithPassword`), sesión restaurada con `getSession` y `onAuthStateChange`. ✅ cliente.
+7. Roles y permisos: `supabase/roles.sql` (hay que aplicarlo en el panel) + rol leído de `perfiles` en cada cambio de sesión. ✅ cliente.
+8. Restricción de eliminación: botones solo si `canDelete()`; la RLS es la que decide. Pendiente: decidir quién puede editar y borrar notas (UPDATE sigue abierto).
+
+Patrones del cliente para escrituras:
+- `runWrite(query, mensaje)`: añade `.select('id')` y avisa si hubo error o si se afectaron 0 filas (la RLS rechaza UPDATE/DELETE sin dar error).
+- `removeFromBucket(paths)`: borra de Storage y comprueba en la URL pública lo que no se devolvió como borrado; siempre antes de borrar filas.
+- `errorMessage(error, mensaje)`: mensaje amable para errores de permisos (`42501`, 401/403, RLS).
+- El rol nunca se guarda en `localStorage`; `canDelete()` solo decide qué se muestra.
