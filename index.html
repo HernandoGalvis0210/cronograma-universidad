@@ -158,6 +158,15 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
 .cancel{color:var(--text);background:var(--surface-muted);border:1px solid var(--border);}
 .cancel:hover{border-color:var(--border-strong);background:var(--bg);}
+.add:disabled{opacity:.7;cursor:wait;}
+.header-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;}
+.auth-area{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+.auth-btn{padding:9px 13px;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);font-size:.82rem;}
+.auth-btn:hover{background:rgba(255,255,255,.2);}
+.role-chip{display:inline-flex;align-items:center;max-width:100%;padding:7px 11px;color:var(--on-primary);background:var(--primary);border-radius:999px;font-size:.75rem;font-weight:800;letter-spacing:.025em;line-height:1.1;}
+.role-chip.no-role{color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);}
+.login-help{margin:0;color:var(--muted);font-size:.88rem;}
+.form-error{padding:10px 12px;color:var(--brand-crimson);background:color-mix(in srgb,var(--brand-crimson) 10%,var(--card));border:1px solid color-mix(in srgb,var(--brand-crimson) 35%,transparent);border-radius:var(--radius-sm);font-size:.85rem;font-weight:600;}
 
 @media(max-width:1024px) and (min-width:769px){
  .detail-grid{gap:24px;}
@@ -182,6 +191,7 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
  .dot{left:-2px;width:23px;height:23px;border-width:5px;}
  .header-flex{flex-direction:column;align-items:flex-start;}
  .theme-btn{position:absolute;top:34px;right:18px;}
+ .header-actions{width:100%;justify-content:flex-start;}
  .card-head{flex-direction:column;gap:11px;padding:18px 15px;}
  .card-head-content{width:100%;}
  .badge{align-self:flex-start;min-width:0;max-width:100%;}
@@ -218,6 +228,7 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
  .theme-btn{top:28px;right:14px;}
  .card-head,.details,.card-foot{padding-right:12px;padding-left:12px;}
  .file-actions button{flex-basis:100%;}
+ .auth-btn{padding:8px 11px;font-size:.78rem;}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -246,7 +257,10 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
       <h1>📅 Cronograma de Actividades</h1>
       <p class="subtitle">Planificación, responsables y archivos de cada actividad</p>
     </div>
-    <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+    <div class="header-actions">
+      <div class="auth-area" id="authArea" aria-live="polite"></div>
+      <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+    </div>
   </div>
 </header>
 
@@ -300,6 +314,22 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
  </div>
 </div>
 
+<div class="modal" id="loginModal" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+ <div class="modal-box">
+  <h2 id="loginTitle">Acceso revisores</h2>
+  <form id="loginForm" class="form-grid" novalidate>
+   <p class="login-help">Solo para cuentas con rol de revisión. Ver y crear actividades o subir archivos no requiere iniciar sesión.</p>
+   <div><label for="loginEmail">Correo</label><input type="email" id="loginEmail" autocomplete="username" required></div>
+   <div><label for="loginPassword">Contraseña</label><input type="password" id="loginPassword" autocomplete="current-password" required></div>
+   <div id="loginError" class="form-error" role="alert" hidden></div>
+   <div class="modal-actions">
+    <button type="button" class="cancel" id="loginCancel">Cancelar</button>
+    <button type="submit" class="add" id="loginSubmit">Ingresar</button>
+   </div>
+  </form>
+ </div>
+</div>
+
 <script>
 // --- CONFIGURACIÓN DE TEMA OSCURO ---
 function toggleTheme() {
@@ -324,7 +354,124 @@ let filesData = {};
 const statusText={pending:"Pendiente", approved:"Aprobado", done:"Completada"};
 let currentFilter="all";
 let editingId=null;
-let openCards = []; 
+let openCards = [];
+
+// --- SESIÓN DE REVISORES ---
+// El rol solo decide qué botones se muestran: quien permite o rechaza cada
+// operación es la RLS de Supabase. El rol no se guarda en el navegador; se
+// vuelve a leer de "perfiles" en cada carga y cada cambio de sesión.
+const roleText={superior:"Superior", academico:"Académico", administracion:"Administración"};
+let currentSession=null;
+let currentRole=null;
+let authVersion=0;
+let loginReturnFocus=null;
+
+function canDelete(){
+  return !!currentSession && Object.hasOwn(roleText, currentRole);
+}
+
+async function loadRole(session){
+  if(!session) return null;
+  const { data, error } = await supabaseClient.from('perfiles').select('rol').eq('id', session.user.id).maybeSingle();
+  if(error){ console.warn("No se pudo leer el perfil:", error.message); return null; }
+  return data && Object.hasOwn(roleText, data.rol) ? data.rol : null;
+}
+
+async function applySession(session){
+  const version = ++authVersion;
+  const role = await loadRole(session);
+  if(version !== authVersion) return; // llegó un cambio de sesión más reciente
+  currentSession = session;
+  currentRole = role;
+  renderAuthArea();
+  render();
+}
+
+function renderAuthArea(){
+  const area = document.getElementById("authArea");
+  if(!currentSession){
+    area.innerHTML = `<button type="button" class="auth-btn" id="loginOpenBtn">🔐 Acceso revisores</button>`;
+    document.getElementById("loginOpenBtn").addEventListener("click", openLoginModal);
+    return;
+  }
+  const label = currentRole ? roleText[currentRole] : "Sin rol asignado";
+  area.innerHTML = `
+    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="${escapeHtml(currentSession.user.email)}">👤 ${escapeHtml(label)}</span>
+    <button type="button" class="auth-btn" id="logoutBtn">Cerrar sesión</button>`;
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+}
+
+function openLoginModal(){
+  loginReturnFocus = document.activeElement;
+  document.getElementById("loginForm").reset();
+  setLoginError("");
+  document.getElementById("loginModal").classList.add("show");
+  document.getElementById("loginEmail").focus();
+}
+
+function closeLoginModal(){
+  document.getElementById("loginModal").classList.remove("show");
+  const target = loginReturnFocus && document.contains(loginReturnFocus) ? loginReturnFocus : document.querySelector("#authArea button");
+  if(target) target.focus();
+}
+
+function setLoginError(msg){
+  const el = document.getElementById("loginError");
+  el.textContent = msg;
+  el.hidden = !msg;
+}
+
+function loginErrorText(error){
+  const msg = String(error?.message || "").toLowerCase();
+  if(error?.status === 429 || msg.includes("rate limit")) return "Demasiados intentos. Espera un momento e inténtalo de nuevo.";
+  if(msg.includes("invalid login credentials")) return "Correo o contraseña incorrectos.";
+  if(msg.includes("email not confirmed")) return "Esta cuenta aún no está confirmada. Pide a un administrador que la confirme.";
+  if(msg.includes("failed to fetch") || msg.includes("network")) return "No se pudo conectar con el servidor. Revisa tu conexión.";
+  return "No se pudo iniciar sesión. Inténtalo de nuevo.";
+}
+
+async function submitLogin(e){
+  e.preventDefault();
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  if(!email || !password){ setLoginError("Escribe tu correo y tu contraseña."); return; }
+  const btn = document.getElementById("loginSubmit");
+  btn.disabled = true;
+  btn.textContent = "⏳ Ingresando...";
+  setLoginError("");
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if(error){
+      setLoginError(loginErrorText(error));
+      document.getElementById("loginPassword").select();
+      return;
+    }
+    await applySession(data.session);
+    loginReturnFocus = null;
+    closeLoginModal();
+  } catch (err) {
+    setLoginError(loginErrorText(err));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Ingresar";
+  }
+}
+
+async function logout(){
+  const { error } = await supabaseClient.auth.signOut({ scope: 'local' });
+  if(error) console.warn("Error al cerrar sesión:", error.message);
+  await applySession(null);
+  const btn = document.getElementById("loginOpenBtn");
+  if(btn) btn.focus();
+}
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if(event === 'INITIAL_SESSION') return; // la restaura getSession() al cargar
+  if(event === 'TOKEN_REFRESHED'){ currentSession = session; return; }
+  // Diferido: llamar a Supabase dentro de este callback puede bloquear el cliente de auth.
+  setTimeout(() => applySession(session), 0);
+});
+// ------------------------------------
 
 async function fetchData(){
   const { data: acts } = await supabaseClient.from('cronograma_actividades').select('*').order('id', { ascending: true });
@@ -671,7 +818,29 @@ timelineBox.addEventListener("change", e => {
 // ---------------------------------------------
 
 document.getElementById("activityModal").addEventListener("click",e=>{if(e.target.id==="activityModal")closeActivityModal();});
-window.onload = fetchData;
+
+// --- MODAL DE ACCESO: envío, cierre y teclado (Esc y foco atrapado) ---
+const loginModal = document.getElementById("loginModal");
+document.getElementById("loginForm").addEventListener("submit", submitLogin);
+document.getElementById("loginCancel").addEventListener("click", closeLoginModal);
+loginModal.addEventListener("click", e => { if(e.target === loginModal) closeLoginModal(); });
+document.addEventListener("keydown", e => {
+ if(!loginModal.classList.contains("show")) return;
+ if(e.key === "Escape"){ e.preventDefault(); closeLoginModal(); return; }
+ if(e.key !== "Tab") return;
+ const focusables = [...loginModal.querySelectorAll("input, button:not([disabled])")];
+ const first = focusables[0], last = focusables[focusables.length - 1];
+ if(!loginModal.contains(document.activeElement)){ e.preventDefault(); first.focus(); }
+ else if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+ else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+// ---------------------------------------------
+
+renderAuthArea();
+window.onload = () => {
+ fetchData();
+ supabaseClient.auth.getSession().then(({ data }) => applySession(data.session));
+};
 </script>
 </body>
 </html>
