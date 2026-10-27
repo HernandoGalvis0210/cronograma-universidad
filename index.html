@@ -712,7 +712,7 @@ function toggleCard(id){
 function linkify(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   return escapeHtml(text).replace(urlRegex, function(url) {
-    return `<a href="${url}" target="_blank">${url}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
   });
 }
 
@@ -890,7 +890,7 @@ async function addFiles(id, input){
 
 async function downloadFile(path){
  const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(path);
- if(data) window.open(data.publicUrl, '_blank');
+ if(data) window.open(data.publicUrl, '_blank', 'noopener,noreferrer');
 }
 
 async function removeFile(fileId, path){
