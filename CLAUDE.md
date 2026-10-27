@@ -73,6 +73,7 @@ Canal `realtime_sync` escucha `*` en ambas tablas y vuelve a llamar a `fetchData
 - **Un solo archivo**: no separar CSS/JS en archivos aparte ni introducir bundlers/frameworks.
 - Usar las **variables CSS existentes** (`--primary`, `--secondary`, `--brand-crimson`, `--card`, `--border`, `--radius-*`, `--shadow-*`, `--pending/approved/done(-bg)`, etc.) en lugar de colores fijos, para que funcionen en tema claro y oscuro (`body.dark-mode`).
 - Identidad: dorado (`--brand-gold`), azul marino (`--brand-navy`), carmesí (`--brand-crimson`) para acciones destructivas.
+- Sin emojis en la interfaz (textos, `title`/`aria-label`, mensajes): texto sobrio. Si un icono aporta, usar `icon('sede'|'persona'|'archivo'|'sol'|'luna')` (SVG de línea de `ICONOS`, `currentColor`, `aria-hidden`); un botón solo con icono lleva `aria-label` y `title`.
 - Estilo de código: CSS compacto en una línea por regla; JS sin framework, handlers `onclick` inline, `async/await` con `supabaseClient`.
 - Al insertar datos en HTML usar siempre `escapeHtml()`. En las tarjetas no se usan `onclick`/`onchange` inline: los botones llevan `data-action` + `data-id` (ids numéricos) y un listener delegado en `#timeline` despacha la acción. Para nuevas acciones, añadir un `case` ahí en lugar de interpolar datos en atributos.
 

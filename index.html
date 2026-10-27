@@ -120,7 +120,9 @@ body.dark-mode .date{color:var(--on-primary);}
 .activity-location,.activity-responsible{display:flex;align-items:flex-start;min-width:0;gap:6px;}
 .activity-location{margin-bottom:3px!important;color:var(--secondary)!important;font-weight:600;}
 .activity-responsible{color:var(--muted);}
-.metadata-icon{flex:0 0 auto;line-height:1.55;}
+.metadata-icon{display:inline-flex;flex:0 0 auto;align-items:center;height:1.55em;}
+.icon{display:inline-block;flex:none;width:1em;height:1em;vertical-align:-.125em;}.theme-btn .icon{width:20px;height:20px;}.role-chip .icon{margin-right:6px;}.file-name .icon{color:var(--muted);}
+.note-remove{height:max-content;padding:4px 9px;font-size:.75rem;border-radius:6px;}
 .metadata-content{display:flex;flex:1 1 auto;flex-wrap:wrap;min-width:0;gap:0 .32rem;overflow-wrap:break-word;word-break:normal;}
 .metadata-content b{flex:0 0 auto;white-space:nowrap;}
 .metadata-content span{min-width:0;overflow-wrap:break-word;word-break:normal;}
@@ -284,19 +286,19 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
 <header>
   <div class="container header-flex">
     <div>
-      <h1>📅 Cronograma de Actividades</h1>
+      <h1>Cronograma de Actividades</h1>
       <p class="subtitle">Planificación, responsables y archivos de cada actividad</p>
     </div>
     <div class="header-actions">
       <div class="auth-area" id="authArea" aria-live="polite"></div>
-      <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+      <button type="button" id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar a tema oscuro" aria-label="Cambiar a tema oscuro"></button>
     </div>
   </div>
 </header>
 
 <main class="container">
   <div class="toolbar">
-    <button class="add" onclick="openActivityModal()">＋ Nueva actividad</button>
+    <button class="add" onclick="openActivityModal()">Nueva actividad</button>
     <button class="filter active" data-filter="all">Todas</button>
     <button class="filter" data-filter="pending">Pendientes</button>
     <button class="filter" data-filter="approved">Aprobadas</button>
@@ -311,7 +313,7 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
   </div>
 
   <div class="help">
-    <b>💡 Cómo usarlo:</b> Haz clic sobre el título de cualquier actividad para abrir sus detalles, guardar enlaces, agregar notas y gestionar archivos.
+    <b>Cómo usarlo:</b> Haz clic sobre el título de cualquier actividad para abrir sus detalles, guardar enlaces, agregar notas y gestionar archivos.
   </div>
 
   <section id="timeline" class="timeline"></section>
@@ -384,17 +386,41 @@ const ALLOWED_UPLOAD_LABEL = "PDF, Word, Excel, PowerPoint, JPG, PNG o WebP";
 const UPLOAD_ACCEPT = Object.keys(ALLOWED_UPLOAD_TYPES).map(ext => "." + ext).join(",");
 // ------------------------------------
 
+// --- ICONOS (SVG de línea, heredan el color del texto) ---
+// Decorativos: siempre aria-hidden; el texto o el aria-label del control
+// es el que da el significado.
+const ICONOS = {
+  sede: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  persona: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  archivo: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
+  sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+};
+function icon(nombre){
+  return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONOS[nombre]}</svg>`;
+}
+// ------------------------------------
+
 // --- CONFIGURACIÓN DE TEMA OSCURO ---
+// El botón muestra el tema al que se cambia (sol en oscuro, luna en claro).
+function paintThemeButton(){
+  const isDark = document.body.classList.contains('dark-mode');
+  const btn = document.getElementById('themeToggle');
+  const label = isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+  btn.innerHTML = icon(isDark ? 'sol' : 'luna');
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
 function toggleTheme() {
   document.body.classList.toggle('dark-mode');
   const isDark = document.body.classList.contains('dark-mode');
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+  paintThemeButton();
 }
 if(localStorage.getItem('theme') === 'dark') {
   document.body.classList.add('dark-mode');
-  document.getElementById('themeToggle').textContent = '☀️';
 }
+paintThemeButton();
 // ------------------------------------
 
 const { createClient } = supabase;
@@ -452,13 +478,13 @@ async function applySession(session){
 function renderAuthArea(){
   const area = document.getElementById("authArea");
   if(!currentSession){
-    area.innerHTML = `<button type="button" class="auth-btn" id="loginOpenBtn">🔐 Acceso revisores</button>`;
+    area.innerHTML = `<button type="button" class="auth-btn" id="loginOpenBtn">Acceso revisores</button>`;
     document.getElementById("loginOpenBtn").addEventListener("click", openLoginModal);
     return;
   }
   const label = currentRole ? roleText[currentRole] : "Sin rol asignado";
   area.innerHTML = `
-    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="Usuario: ${escapeHtml(String(currentSession.user.email || '').split('@')[0])}">👤 ${escapeHtml(label)}</span>
+    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="Usuario: ${escapeHtml(String(currentSession.user.email || '').split('@')[0])}">${icon('persona')}${escapeHtml(label)}</span>
     <button type="button" class="auth-btn" id="logoutBtn">Cerrar sesión</button>`;
   document.getElementById("logoutBtn").addEventListener("click", logout);
 }
@@ -521,7 +547,7 @@ async function submitLogin(e){
   }
   const btn = document.getElementById("loginSubmit");
   btn.disabled = true;
-  btn.textContent = "⏳ Ingresando...";
+  btn.textContent = "Ingresando...";
   setLoginError("");
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -760,7 +786,7 @@ function renderNotesLog(id, rawNotes) {
   return notesArray.map((note, idx) => `
     <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
       <div style="flex:1; white-space:pre-wrap; word-break:break-word;">${linkify(note)}</div>
-      <button class="delete" style="padding:4px 8px; font-size:10px; height:max-content; border-radius:6px;" data-action="delete-note" data-id="${Number(id)}" data-index="${idx}" title="Borrar nota">❌</button>
+      <button type="button" class="delete note-remove" data-action="delete-note" data-id="${Number(id)}" data-index="${idx}" title="Quitar nota" aria-label="Quitar nota">Quitar</button>
     </div>
   `).join('');
 }
@@ -799,8 +825,8 @@ function render(){
      <div class="card-head-content">
       <div class="date">${escapeHtml(a.date)}</div>
       <h2 class="title">${escapeHtml(a.title)}</h2>
-      ${a.location ? `<div class="responsible activity-location" style="margin-bottom:4px; color:var(--secondary)"><span class="metadata-icon">📍</span><span class="metadata-content"><b>Sedes:</b> <span>${escapeHtml(a.location)}</span></span></div>` : ''}
-      <div class="responsible activity-responsible"><span class="metadata-icon">👤</span><span class="metadata-content"><b>Responsable:</b> <span>${escapeHtml(a.responsible)}</span></span></div>
+      ${a.location ? `<div class="responsible activity-location" style="margin-bottom:4px; color:var(--secondary)"><span class="metadata-icon">${icon('sede')}</span><span class="metadata-content"><b>Sedes:</b> <span>${escapeHtml(a.location)}</span></span></div>` : ''}
+      <div class="responsible activity-responsible"><span class="metadata-icon">${icon('persona')}</span><span class="metadata-content"><b>Responsable:</b> <span>${escapeHtml(a.responsible)}</span></span></div>
      </div>
      <span class="badge ${escapeHtml(a.status)}">${escapeHtml(statusText[a.status])}</span>
     </div>
@@ -831,7 +857,7 @@ function render(){
         ${fileHTML(a,fList)}
        </div>
        <label class="file-label add" style="display:inline-block;margin-top:10px">
-        📎 Agregar archivo
+        Agregar archivo
         <input type="file" multiple hidden accept="${UPLOAD_ACCEPT}" data-action="add-files" data-id="${id}">
        </label>
       </div>
@@ -841,8 +867,8 @@ function render(){
 
     ${editable || canDelete() ? `
     <div class="card-foot">
-      ${editable ? `<button class="toggle" data-action="edit-activity" data-id="${id}">✏️ Editar Actividad</button>` : ''}
-      ${canDelete() ? `<button class="delete" data-action="delete-activity" data-id="${id}">🗑️ Eliminar Actividad</button>` : ''}
+      ${editable ? `<button class="toggle" data-action="edit-activity" data-id="${id}">Editar actividad</button>` : ''}
+      ${canDelete() ? `<button class="delete" data-action="delete-activity" data-id="${id}">Eliminar actividad</button>` : ''}
     </div>` : ''}
    </div>
   `;
@@ -855,7 +881,7 @@ function fileHTML(a,files){
  if(!files.length)return '<div class="empty">No hay archivos asociados todavía.</div>';
  return files.map(f=>`
   <div class="file-row">
-   <span class="file-name" title="${escapeHtml(f.name)}">📄 ${escapeHtml(f.name)}</span>
+   <span class="file-name" title="${escapeHtml(f.name)}">${icon('archivo')} ${escapeHtml(f.name)}</span>
    <div class="file-actions">
     <button class="toggle" data-action="open-file" data-file-id="${Number(f.id)}">Abrir</button>
     ${canDelete() ? `<button class="delete" data-action="remove-file" data-file-id="${Number(f.id)}">Eliminar</button>` : ''}
@@ -879,7 +905,7 @@ async function appendNote(id, btn){
  const textarea = document.getElementById("new-note-"+id);
  const newText = textarea.value.trim();
  if(!newText) return;
- btn.textContent = "⏳ Guardando...";
+ btn.textContent = "Guardando...";
  const a = activities.find(x => x.id === id);
  let updatedNotes = a.notes ? a.notes + "\n\n• " + newText : "• " + newText;
  if(updatedNotes.length > MAX_NOTES_LENGTH){
@@ -892,7 +918,7 @@ async function appendNote(id, btn){
    btn.textContent = "Guardar en el registro";
  } else {
    textarea.value = "";
-   btn.textContent = "✓ ¡Guardado!";
+   btn.textContent = "Guardado";
    setTimeout(() => btn.textContent = "Guardar en el registro", 1500);
  }
 }
@@ -943,7 +969,7 @@ async function addFiles(id, input){
   if(valid.length === 0){ input.value = ""; return; }
   const labelDiv = input.parentElement;
   const originalText = labelDiv.innerHTML;
-  labelDiv.innerHTML = "⏳ Subiendo...";
+  labelDiv.textContent = "Subiendo...";
   try {
     for(let file of valid){
       const fileExt = fileExtension(file.name);
