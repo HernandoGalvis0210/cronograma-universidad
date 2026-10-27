@@ -263,7 +263,7 @@ En el **SQL Editor** (todos terminan en `rollback`, no cambian nada):
 
 En la **página**:
 
-1. **Sin iniciar sesión**: abre una tarjeta. No deben aparecer "Actualizar Estado", "✏️ Editar Actividad" ni los botones de eliminar. Sí puedes agregar una nota y **subir un archivo** (comprueba que la subida funciona: es la prueba de que el cambio de Storage no la afectó) y **abrirlo**.
+1. **Sin iniciar sesión**: abre una tarjeta. No deben aparecer "Actualizar Estado", "Editar actividad" ni los botones de eliminar. Sí puedes agregar una nota y **subir un archivo** (comprueba que la subida funciona: es la prueba de que el cambio de Storage no la afectó) y **abrirlo**.
 2. Crea una actividad: el formulario no muestra "Estado" y queda como **Pendiente**.
 3. Intenta subir un `.exe` o un archivo de más de 10 MB: la página lo rechaza con un mensaje.
 4. **F12 → Consola**, cambia `123` por un id real:
@@ -279,7 +279,7 @@ En la **página**:
    ```
 
    Esperado: `error` con `code: "42501"` y ninguna actividad nueva.
-5. **Inicia sesión como revisor**: aparecen el selector de estado y "✏️ Editar Actividad", y ambos funcionan.
+5. **Inicia sesión como revisor**: aparecen el selector de estado y "Editar actividad", y ambos funcionan.
 
 Si la subida sin sesión **falla** tras aplicar el script, revierte solo la sección 3 (bloque "3." de la reversión) y avísame.
 
