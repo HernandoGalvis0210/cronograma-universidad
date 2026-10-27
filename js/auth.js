@@ -71,9 +71,9 @@ export function setLoginError(msg){
 
 // Los revisores entran con un usuario; en Supabase Auth son cuentas
 // <usuario>@cronograma.local. "Académico", "ACADEMICO" y "academico" valen igual.
-export const REVIEWER_USERS = ["superior", "academico", "administracion"];
-export const LOGIN_DOMAIN = "@cronograma.local";
-export const BAD_CREDENTIALS_MSG = "Usuario o contraseña incorrectos.";
+const REVIEWER_USERS = ["superior", "academico", "administracion"];
+const LOGIN_DOMAIN = "@cronograma.local";
+const BAD_CREDENTIALS_MSG = "Usuario o contraseña incorrectos.";
 
 export function normalizeUser(value){
   return String(value || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");

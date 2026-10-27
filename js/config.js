@@ -3,9 +3,9 @@
 // real la dan las políticas RLS. Nunca poner aquí la clave service_role.
 import { PERMISSION_MSG, TOO_LONG_MSG, NO_ROWS_MSG } from './estado.js';
 
-export const { createClient } = supabase;
-export const supabaseUrl = 'https://kakbjyjonxtbhobeiblv.supabase.co';
-export const supabaseKey = 'sb_publishable_BiXNML_8PgA2x6pd6UPWWg_EGJ8tMUW';
+const { createClient } = supabase;
+const supabaseUrl = 'https://kakbjyjonxtbhobeiblv.supabase.co';
+const supabaseKey = 'sb_publishable_BiXNML_8PgA2x6pd6UPWWg_EGJ8tMUW';
 export const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
 // "supabaseClient" sigue disponible en la consola del navegador (lo usan

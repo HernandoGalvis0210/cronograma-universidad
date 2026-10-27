@@ -8,7 +8,7 @@ import { fileHTML, findFile, addFiles, downloadFile, removeFile } from './archiv
 // --- ICONOS (SVG de línea, heredan el color del texto) ---
 // Decorativos: siempre aria-hidden; el texto o el aria-label del control
 // es el que da el significado.
-export const ICONOS = {
+const ICONOS = {
   sede: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
   persona: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   archivo: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
