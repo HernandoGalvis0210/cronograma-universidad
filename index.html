@@ -94,7 +94,8 @@ h1{margin:0 0 7px;font-size:clamp(1.8rem,4vw,2.7rem);font-weight:800;letter-spac
 button,.file-label{border:0;border-radius:var(--radius-sm);padding:11px 15px;font:inherit;font-size:.9rem;font-weight:700;line-height:1.2;cursor:pointer;}
 .filter{color:var(--muted);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
 .filter:hover{color:var(--secondary);border-color:var(--border-strong);}
-.filter.active{color:var(--on-primary);background:var(--primary);border-color:var(--primary);box-shadow:0 5px 12px rgba(220,174,0,.24);}
+/* La activa no hereda el fundido global (*{transition}): sin él se veía apagada al pulsarla con el puntero encima. Mismo estilo en hover y con foco. */
+.filter.active,.filter.active:hover,.filter.active:focus-visible{color:var(--on-primary);background:var(--primary);border-color:var(--primary);box-shadow:0 5px 12px rgba(220,174,0,.24);transition:none;}
 main{width:100%;padding:28px 18px 58px;overflow-x:hidden;}
 .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
 .stat{padding:18px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);}
