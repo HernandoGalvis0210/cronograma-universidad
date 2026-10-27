@@ -306,7 +306,7 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
   </div>
 
   <div class="stats">
-    <div class="stat" title="Pendientes + aprobadas: las que muestra la pestaña Todas"><strong id="total">0</strong><span>En curso</span></div>
+    <div class="stat" title="Total de actividades: pendientes + aprobadas + completadas"><strong id="total">0</strong><span>Todas</span></div>
     <div class="stat"><strong id="pendingCount">0</strong><span>Pendientes</span></div>
     <div class="stat"><strong id="approvedCount">0</strong><span>Aprobadas</span></div>
     <div class="stat"><strong id="doneCount">0</strong><span>Completadas</span></div>
@@ -431,9 +431,6 @@ const supabaseClient = createClient(supabaseUrl, supabaseKey);
 let activities = [];
 let filesData = {};
 const statusText={pending:"Pendiente", approved:"Aprobado", done:"Completada"};
-// Estados que muestra la pestaña "Todas" y que cuenta "En curso". Las
-// completadas quedan fuera y se ven en su pestaña (decisión de la fase 5).
-const ACTIVE_STATUSES=["pending","approved"];
 let currentFilter="all";
 let editingId=null;
 let openCards = [];
@@ -728,7 +725,7 @@ async function saveActivity(){
  const ok = editingId
    ? await runWrite(supabaseClient.from('cronograma_actividades').update(values).eq('id', editingId), "No se pudo guardar la actividad.")
    : await runWrite(supabaseClient.from('cronograma_actividades').insert([values]), "No se pudo crear la actividad.");
- if(ok) closeActivityModal();
+ if(ok){ closeActivityModal(); await fetchData(); }
 }
 
 async function deleteActivity(id){
@@ -744,7 +741,7 @@ async function deleteActivity(id){
  if(storageError){ alert(errorMessage(storageError, "No se pudieron borrar los archivos del almacenamiento. La actividad no se eliminó.")); return; }
 
  // 2) La actividad; sus filas de cronograma_archivos caen por ON DELETE CASCADE.
- await runWrite(supabaseClient.from('cronograma_actividades').delete().eq('id', id), "No se pudo eliminar la actividad.");
+ if(await runWrite(supabaseClient.from('cronograma_actividades').delete().eq('id', id), "No se pudo eliminar la actividad.")) await fetchData();
 }
 
 function activityDateValue(a){
@@ -807,7 +804,8 @@ async function deleteNote(id, index) {
 
 function render(){
  const box=document.getElementById("timeline"); box.innerHTML="";
- let shown=activities.filter(a=>currentFilter==="all" ? ACTIVE_STATUSES.includes(a.status) : a.status===currentFilter);
+ // "Todas" muestra todas las actividades, completadas incluidas; cada otra pestaña, solo su estado.
+ let shown=activities.filter(a=>currentFilter==="all" || a.status===currentFilter);
  shown.sort((a,b)=>activityDateValue(a)-activityDateValue(b));
  shown.forEach(a=>{
   const id = Number(a.id);
@@ -1006,7 +1004,7 @@ async function removeFile(fileId, path){
 }
 
 function updateStats(){
- document.getElementById("total").textContent=activities.filter(a=>ACTIVE_STATUSES.includes(a.status)).length;
+ document.getElementById("total").textContent=activities.length;
  document.getElementById("pendingCount").textContent=activities.filter(a=>a.status==="pending").length;
  document.getElementById("approvedCount").textContent=activities.filter(a=>a.status==="approved").length;
  document.getElementById("doneCount").textContent=activities.filter(a=>a.status==="done").length;
