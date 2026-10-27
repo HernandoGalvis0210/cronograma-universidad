@@ -321,13 +321,13 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
  <div class="modal-box">
   <h2 id="modalTitle">Nueva actividad</h2>
   <div class="form-grid">
-   <div><label>Actividad</label><input id="fTitle" placeholder="Nombre de la actividad"></div>
+   <div><label>Actividad</label><input id="fTitle" maxlength="300" placeholder="Nombre de la actividad"></div>
    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
      <div><label>Fecha inicio</label><input type="date" id="fDateStart"></div>
      <div><label>Fecha fin (opcional)</label><input type="date" id="fDateEnd"></div>
    </div>
-   <div><label>Sedes / Desglose de fechas</label><input id="fLocation" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
-   <div><label>Responsable(s)</label><input id="fResponsible" placeholder="Nombre del responsable"></div>
+   <div><label>Sedes / Desglose de fechas</label><input id="fLocation" maxlength="1000" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
+   <div><label>Responsable(s)</label><input id="fResponsible" maxlength="500" placeholder="Nombre del responsable"></div>
    <div id="fStatusField">
      <label for="fStatus">Estado</label>
      <select id="fStatus">
@@ -615,6 +615,9 @@ function closeActivityModal(){document.getElementById("activityModal").classList
 // --- ERRORES Y PERMISOS ---
 const BUCKET = 'cronograma-archivos';
 const PERMISSION_MSG = "No tienes permisos para realizar esta acción. Si eres revisor, inicia sesión con «Acceso revisores».";
+const TOO_LONG_MSG = "No se guardó: el texto es demasiado largo. Acórtalo e inténtalo de nuevo.";
+// Igual que los CHECK de roles-2.sql (en caracteres).
+const MAX_NOTES_LENGTH = 50000;
 const NO_ROWS_MSG = "No se aplicó el cambio: no tienes permisos o el registro ya no existe. Si eres revisor, inicia sesión con «Acceso revisores».";
 
 function isPermissionError(error){
@@ -624,7 +627,9 @@ function isPermissionError(error){
 }
 
 function errorMessage(error, fallback){
-  return isPermissionError(error) ? PERMISSION_MSG : `${fallback}\n\nDetalle: ${error?.message || error}`;
+  if(isPermissionError(error)) return PERMISSION_MSG;
+  if(error?.code === "23514") return TOO_LONG_MSG; // CHECK de longitud de roles-2.sql
+  return `${fallback}\n\nDetalle: ${error?.message || error}`;
 }
 
 // Con RLS, un UPDATE o DELETE no permitido no da error: afecta 0 filas.
@@ -874,6 +879,11 @@ async function appendNote(id, btn){
  btn.textContent = "⏳ Guardando...";
  const a = activities.find(x => x.id === id);
  let updatedNotes = a.notes ? a.notes + "\n\n• " + newText : "• " + newText;
+ if(updatedNotes.length > MAX_NOTES_LENGTH){
+   alert(`El registro de notas de esta actividad llegó a su máximo (${MAX_NOTES_LENGTH.toLocaleString('es')} caracteres). Acorta la nota o borra notas antiguas.`);
+   btn.textContent = "Guardar en el registro";
+   return;
+ }
  const ok = await runWrite(supabaseClient.from('cronograma_actividades').update({notes: updatedNotes}).eq('id', id), "Error al guardar la nota.");
  if(!ok){
    btn.textContent = "Guardar en el registro";
