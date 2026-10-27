@@ -361,6 +361,29 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
 </div>
 
 <script>
+// --- LÍMITES DE SUBIDA DE ARCHIVOS ---
+// Se comprueban en la página antes de subir. Si el bucket tiene su propio
+// límite de tamaño o de tipos, Supabase también lo aplica.
+const MAX_UPLOAD_MB = 10;
+const MAX_FILE_NAME_LENGTH = 255; // igual que el CHECK de cronograma_archivos.name
+// Extensión permitida → tipos MIME aceptados para ella.
+const ALLOWED_UPLOAD_TYPES = {
+  pdf:  ["application/pdf"],
+  doc:  ["application/msword"],
+  docx: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  xls:  ["application/vnd.ms-excel"],
+  xlsx: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  ppt:  ["application/vnd.ms-powerpoint"],
+  pptx: ["application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+  jpg:  ["image/jpeg"],
+  jpeg: ["image/jpeg"],
+  png:  ["image/png"],
+  webp: ["image/webp"]
+};
+const ALLOWED_UPLOAD_LABEL = "PDF, Word, Excel, PowerPoint, JPG, PNG o WebP";
+const UPLOAD_ACCEPT = Object.keys(ALLOWED_UPLOAD_TYPES).map(ext => "." + ext).join(",");
+// ------------------------------------
+
 // --- CONFIGURACIÓN DE TEMA OSCURO ---
 function toggleTheme() {
   document.body.classList.toggle('dark-mode');
@@ -801,7 +824,7 @@ function render(){
        </div>
        <label class="file-label add" style="display:inline-block;margin-top:10px">
         📎 Agregar archivo
-        <input type="file" multiple hidden data-action="add-files" data-id="${id}">
+        <input type="file" multiple hidden accept="${UPLOAD_ACCEPT}" data-action="add-files" data-id="${id}">
        </label>
       </div>
 
@@ -861,21 +884,63 @@ async function appendNote(id, btn){
  }
 }
 
+function fileExtension(name){
+  const parts = String(name).toLowerCase().split('.');
+  return parts.length > 1 ? parts.pop() : "";
+}
+
+// Devuelve el motivo por el que no se puede subir el archivo, o null si vale.
+function uploadProblem(file){
+  const ext = fileExtension(file.name);
+  const allowed = Object.hasOwn(ALLOWED_UPLOAD_TYPES, ext) ? ALLOWED_UPLOAD_TYPES[ext] : null;
+  // Algunos sistemas no informan el tipo (file.type vacío): basta la extensión.
+  if(!allowed || (file.type && !allowed.includes(file.type))){
+    return `• "${file.name}": tipo de archivo no permitido.`;
+  }
+  if(file.size > MAX_UPLOAD_MB * 1024 * 1024){
+    return `• "${file.name}": pesa ${(file.size / 1024 / 1024).toFixed(1).replace('.', ',')} MB (máximo ${MAX_UPLOAD_MB} MB).`;
+  }
+  if(file.name.length > MAX_FILE_NAME_LENGTH){
+    return `• "${file.name.slice(0, 40)}…": el nombre es demasiado largo (máximo ${MAX_FILE_NAME_LENGTH} caracteres).`;
+  }
+  return null;
+}
+
+// Rechazos propios del bucket (límite de tamaño o tipos configurados en Supabase).
+function uploadErrorMessage(error, file){
+  const status = String(error?.statusCode ?? error?.status ?? "");
+  const msg = String(error?.message || "").toLowerCase();
+  if(status === "413" || msg.includes("maximum allowed size") || msg.includes("too large")){
+    return `"${file.name}" supera el tamaño máximo que permite el almacenamiento. Reduce el archivo e inténtalo de nuevo.`;
+  }
+  if(status === "415" || msg.includes("mime type")){
+    return `El almacenamiento no acepta el tipo de "${file.name}". Se permiten ${ALLOWED_UPLOAD_LABEL}.`;
+  }
+  return errorMessage(error, `Error al subir el archivo "${file.name}".`);
+}
+
 async function addFiles(id, input){
   const files = Array.from(input.files);
   if (files.length === 0) return;
+  const rejected = files.map(uploadProblem).filter(Boolean);
+  if(rejected.length){
+    alert(`No se subirán estos archivos:\n\n${rejected.join("\n")}\n\nSe permiten ${ALLOWED_UPLOAD_LABEL}, de hasta ${MAX_UPLOAD_MB} MB cada uno.`);
+  }
+  const valid = files.filter(f => !uploadProblem(f));
+  if(valid.length === 0){ input.value = ""; return; }
   const labelDiv = input.parentElement;
   const originalText = labelDiv.innerHTML;
   labelDiv.innerHTML = "⏳ Subiendo...";
   try {
-    for(let file of files){
-      const fileExt = file.name.split('.').pop();
+    for(let file of valid){
+      const fileExt = fileExtension(file.name);
+      const contentType = file.type || ALLOWED_UPLOAD_TYPES[fileExt][0];
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const { error: uploadError } = await supabaseClient.storage.from(BUCKET).upload(fileName, file);
+      const { error: uploadError } = await supabaseClient.storage.from(BUCKET).upload(fileName, file, { contentType });
       if(uploadError){
-        alert(errorMessage(uploadError, `Error al subir el archivo "${file.name}".`));
+        alert(uploadErrorMessage(uploadError, file));
       } else {
-        const { error: dbError } = await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
+        const { error: dbError } = await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: contentType}]);
         if(dbError) alert(errorMessage(dbError, `El archivo "${file.name}" se subió, pero no se pudo registrar.`));
       }
     }
