@@ -1,6 +1,8 @@
 # Roles y permisos en Supabase — Guía paso a paso
 
-Esta guía aplica `roles.sql` en tu proyecto de Supabase. Al terminar:
+Esta guía aplica `roles.sql` y después `roles-2.sql` en tu proyecto de Supabase. La tabla muestra cómo queda tras `roles.sql`; las reglas **vigentes** (tras `roles-2.sql`) están en [Fase 2](#fase-2--permisos-de-edición-roles-2sql).
+
+Tras `roles.sql`:
 
 | Acción | Sin iniciar sesión | Usuario con rol (`superior`, `academico`, `administracion`) |
 |---|---|---|
@@ -170,4 +172,107 @@ El script hace que `cronograma_archivos.activity_id` sea una clave foránea con 
 
 ## Pendiente
 
-- **Edición (UPDATE)**: sigue abierta para todos, incluido **borrar notas** y **cambiar estado**, que técnicamente son ediciones. Está marcado con `TODO` en `roles.sql`.
+- **Borrar notas** sigue abierto para todos. Agregar y borrar una nota son el mismo UPDATE del campo `notes`, así que la base no puede distinguirlos. Se blindará más adelante moviendo las notas a su propia tabla (una fila por nota, con INSERT abierto y DELETE solo para revisores).
+- **Crear con un estado distinto de "pendiente"**: la página solo deja elegir el estado a los revisores, pero la base aún no lo impide en el INSERT.
+
+---
+
+# Fase 2 — Permisos de edición (`roles-2.sql`)
+
+Requiere haber aplicado antes `roles.sql`. Al terminar, las reglas vigentes son:
+
+| Acción | Sin iniciar sesión | Revisor (`superior`, `academico`, `administracion`) |
+|---|---|---|
+| Ver actividades | ✅ | ✅ |
+| Crear actividades (quedan como "Pendiente") | ✅ | ✅ (elige el estado) |
+| Subir archivos | ✅ | ✅ |
+| Abrir archivos (URL pública) | ✅ | ✅ |
+| Agregar notas | ✅ | ✅ |
+| Borrar notas | ✅ (pendiente, ver arriba) | ✅ |
+| **Editar** título, fecha, sedes, responsable | ❌ | ✅ |
+| **Cambiar estado** | ❌ | ✅ |
+| **Eliminar** actividades y archivos | ❌ | ✅ |
+| Listar/descargar el bucket por la API | ❌ | ✅ |
+
+## Qué cambia
+
+1. **Trigger `cronograma_actividades_solo_notas`** (BEFORE UPDATE): si quien actualiza **no** es revisor, solo puede cambiar la columna `notes`. Si intenta cambiar cualquier otra columna, Supabase responde con un error `42501` y el mensaje *"Solo los revisores pueden editar la actividad o cambiar su estado…"*; la página muestra un aviso amable. Las ediciones desde el **SQL Editor** o el **Table Editor** (rol `postgres`) y con `service_role` **no** se bloquean.
+2. **`cronograma_archivos`**: se elimina la política `archivos_update` y se quita el privilegio UPDATE a `anon` y `authenticated` (la página nunca edita esta tabla). Se añade `UNIQUE (path)`.
+3. **Storage**: la política de lectura de `storage.objects` del bucket `cronograma-archivos` queda solo para revisores. **No afecta** a las URL públicas (así se abren los archivos), ni a la subida, ni al borrado de los revisores.
+4. **Límites de longitud** (`CHECK`, en caracteres):
+
+   | Campo | Máximo | Máximo actual (26/10/2026) |
+   |---|---|---|
+   | `title` | 300 | 24 |
+   | `date` | 60 | 23 |
+   | `location` (sedes) | 1000 | 32 |
+   | `responsible` | 500 | 82 |
+   | `notes` (todo el registro) | 50 000 | 610 |
+   | `cronograma_archivos.name` | 255 | 62 |
+
+   Si se supera, Supabase responde con `23514` y la página avisa de que el texto es demasiado largo. Para cambiar un límite, edita el número en `roles-2.sql` (y en `index.html`: `maxlength` de los campos, `MAX_NOTES_LENGTH`, `MAX_FILE_NAME_LENGTH`) y vuelve a ejecutarlo.
+
+## Paso F2.1 — Inspección (solo lectura)
+
+En **SQL Editor → New query** ejecuta por separado las consultas **0.1 a 0.4** de `roles-2.sql` (quitando los `--`):
+
+- **0.1**: longitud máxima actual de cada campo. Deben quedar muy por debajo de los límites.
+- **0.2** y **0.3**: deben devolver **0 filas**. Si 0.3 devuelve rutas repetidas, avísame antes de seguir: hay que decidir qué fila conservar.
+- **0.4**: guarda el resultado como respaldo de las políticas.
+
+## Paso F2.2 — Ejecutar `roles-2.sql`
+
+1. **SQL Editor → New query**, pega **todo** `roles-2.sql` y pulsa **Run**.
+2. Esperado: `Success. No rows returned`.
+3. Si aparece `WARNING: Revisa la política de Storage "…"`, hay una política de lectura en `storage.objects` que no filtra por bucket y seguiría dejando leer este bucket a cualquiera: revísala en **Storage → Policies**.
+
+Errores posibles (en todos los casos no se aplicó nada):
+
+- **`Hay N ruta(s) (path) repetida(s)…`**: ver consulta 0.3.
+- **`check constraint "…_longitud" … is violated by some row`**: ver consulta 0.2.
+- **`must be owner of table objects`**: crea la política de Storage a mano en **Storage → Policies → cronograma-archivos** (SELECT, rol `authenticated`, condición `bucket_id = 'cronograma-archivos' and (select public.es_revisor())`, sustituyendo la de SELECT que había) y ejecuta el script sin la sección 3.
+
+> **Importante:** si algún día vuelves a ejecutar `roles.sql`, este script se deshace en parte (vuelven `archivos_update` y la lectura abierta del bucket). Ejecuta `roles-2.sql` otra vez después.
+
+## Paso F2.3 (recomendado) — Límite del bucket
+
+La página ya rechaza archivos de más de 10 MB o de otros tipos, pero eso se puede saltar llamando a la API. Para que lo aplique Supabase:
+
+1. **Storage → cronograma-archivos → ⋯ → Edit bucket**.
+2. Activa **Restrict file upload size** y pon **10 MB**.
+3. En **Allowed MIME types** pon:
+   `application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-powerpoint, application/vnd.openxmlformats-officedocument.presentationml.presentation, image/jpeg, image/png, image/webp`
+4. **Save**. Si Supabase rechaza una subida por este límite, la página muestra un mensaje claro.
+
+## Paso F2.4 — Probar
+
+En el **SQL Editor** (todos terminan en `rollback`, no cambian nada):
+
+- **5.1 a 5.3**: el trigger existe, `anon_update` y `auth_update` son `false`, y están las restricciones.
+- **5.5**: como anónimo, cambiar el título → **ERROR 42501** con el mensaje del trigger.
+- **5.6**: como anónimo, agregar una nota → **1 fila**.
+- **5.7**: como revisor, cambiar título y estado → **1 fila**.
+- **5.8**: como `postgres` → **1 fila**.
+- **5.9**: título de 301 caracteres → **ERROR 23514**.
+
+En la **página**:
+
+1. **Sin iniciar sesión**: abre una tarjeta. No deben aparecer "Actualizar Estado", "✏️ Editar Actividad" ni los botones de eliminar. Sí puedes agregar una nota y **subir un archivo** (comprueba que la subida funciona: es la prueba de que el cambio de Storage no la afectó) y **abrirlo**.
+2. Crea una actividad: el formulario no muestra "Estado" y queda como **Pendiente**.
+3. Intenta subir un `.exe` o un archivo de más de 10 MB: la página lo rechaza con un mensaje.
+4. **F12 → Consola**, cambia `123` por un id real:
+
+   ```js
+   await supabaseClient.from('cronograma_actividades').update({ title: 'hackeado' }).eq('id', 123).select()
+   ```
+
+   Esperado: `error` con `code: "42501"` y el título sin cambios.
+5. **Inicia sesión como revisor**: aparecen el selector de estado y "✏️ Editar Actividad", y ambos funcionan.
+
+Si la subida sin sesión **falla** tras aplicar el script, revierte solo la sección 3 (bloque "3." de la reversión) y avísame.
+
+## Revertir `roles-2.sql`
+
+La sección **6** de `roles-2.sql` tiene el bloque de reversión completo: copia desde `-- begin;` hasta `-- commit;`, quita los `-- ` del inicio de cada línea y pulsa **Run**. Deja todo como lo dejó `roles.sql` (trigger eliminado, UPDATE de archivos y lectura del bucket abiertos de nuevo, sin `UNIQUE` ni límites). Se puede revertir solo una parte ejecutando únicamente su bloque (1, 2, 3 o 4) dentro de `begin; … commit;`.
+
+La página sigue funcionando tras revertir: solo dejará de recibir los rechazos de la base (los controles de edición seguirán ocultos sin sesión).
