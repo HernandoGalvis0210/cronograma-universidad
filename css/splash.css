@@ -1,0 +1,10 @@
+/* Splash institucional: entrada y salida del logo. Las duraciones llegan desde JS
+   (--splash-entrada/--splash-salida); aquí solo hay valores de respaldo.
+   La capa base (.splash, .splash-logo y el respaldo de 8 s, splash-respaldo) va en línea
+   en el head de index.html para que se vea desde el primer pintado. */
+.splash.is-entering .splash-logo{animation:splash-logo-entrada var(--splash-entrada,600ms) cubic-bezier(.4,0,.2,1) forwards;}
+.splash.is-leaving{pointer-events:none;animation:splash-salida var(--splash-salida,700ms) cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes splash-logo-entrada{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
+@keyframes splash-logo-fundido{from{opacity:0;}to{opacity:1;}}
+@keyframes splash-salida{to{opacity:0;visibility:hidden;}}
+@media(prefers-reduced-motion:reduce){.splash-logo{transform:none;}.splash.is-entering .splash-logo{animation-name:splash-logo-fundido;}}

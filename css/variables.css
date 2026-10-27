@@ -1,0 +1,65 @@
+/* Paleta institucional y temas: claro en :root, oscuro en body.dark-mode.
+   Radios, sombras y colores de estado también se definen aquí. */
+:root{
+  --brand-gold:#f7c600;
+  --brand-gold-deep:#dcae00;
+  --brand-navy:#111d42;
+  --brand-navy-soft:#203968;
+  --brand-crimson:#c8203a;
+  --primary:var(--brand-gold);
+  --primary-hover:var(--brand-gold-deep);
+  --secondary:var(--brand-navy);
+  --secondary-hover:var(--brand-navy-soft);
+  --on-primary:#111d42;
+  --on-secondary:#ffffff;
+  --bg:#f6f7f9;
+  --card:#ffffff;
+  --surface-muted:#f1f3f6;
+  --input-bg:#ffffff;
+  --text:#10182f;
+  --muted:#5f6878;
+  --border:#d8dce3;
+  --border-strong:#b9c0cc;
+  --shadow-sm:0 1px 2px rgba(17,29,66,.06);
+  --shadow-md:0 10px 28px rgba(17,29,66,.10);
+  --shadow-lg:0 24px 60px rgba(17,29,66,.22);
+  --radius-sm:10px;
+  --radius-md:14px;
+  --radius-lg:18px;
+  --pending:#9c6800;
+  --pending-bg:#fff8dd;
+  --approved:#263f73;
+  --approved-bg:#edf1f9;
+  --done:#087a5b;
+  --done-bg:#eafaf4;
+}
+body.dark-mode{
+  --brand-gold:#ffd64d;
+  --brand-gold-deep:#e5b800;
+  --brand-navy:#111d42;
+  --brand-navy-soft:#203968;
+  --brand-crimson:#ff7187;
+  --primary:var(--brand-gold);
+  --primary-hover:var(--brand-gold-deep);
+  --secondary:#8eaeeb;
+  --secondary-hover:#b5cdfa;
+  --on-primary:#111d42;
+  --on-secondary:#10182f;
+  --bg:#0d1322;
+  --card:#151d2e;
+  --surface-muted:#1d283b;
+  --input-bg:#1d283b;
+  --text:#f4f6fb;
+  --muted:#b3bdce;
+  --border:#344158;
+  --border-strong:#4d5e78;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.18);
+  --shadow-md:0 12px 30px rgba(0,0,0,.2);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.42);
+  --pending:#ffd76a;
+  --pending-bg:#3a3015;
+  --approved:#b7cbff;
+  --approved-bg:#26365b;
+  --done:#61d6ae;
+  --done-bg:#12372e;
+}

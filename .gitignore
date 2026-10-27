@@ -1,0 +1,21 @@
+# Variables de entorno y secretos (la clave service_role nunca va al repo)
+.env
+.env.*
+
+# Dependencias y configuración local de Vercel
+node_modules/
+.vercel/
+
+# Capturas y resultados de pruebas
+capturas/
+screenshots/
+*.diff.png
+
+# Temporales del sistema y de editores
+*.tmp
+*.log
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
