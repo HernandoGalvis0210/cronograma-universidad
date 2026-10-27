@@ -135,7 +135,7 @@ El rol no cambia: sigue en `perfiles` asociado a la cuenta.
 
 1. Abre el cronograma **sin iniciar sesión** y crea una actividad llamada `PRUEBA ROLES`.
 2. Ábrela y sube un archivo cualquiera.
-3. Comprueba que **no aparecen** "🗑️ Eliminar Actividad" ni "Eliminar" en el archivo.
+3. Comprueba que **no aparecen** "Eliminar actividad" ni "Eliminar" en el archivo.
 
 ### Prueba B — Desde la consola del navegador (más precisa)
 
@@ -154,7 +154,7 @@ Usa los bloques **6.5** (como anónimo: debe devolver 0 filas) y **6.6** (como u
 
 ### Prueba D — Un revisor sí puede borrar
 
-1. Pulsa **🔐 Acceso revisores** en el encabezado.
+1. Pulsa **Acceso revisores** en el encabezado.
 2. En **Usuario** escribe `académico` (o `superior` / `administración`; da igual tildes y mayúsculas) y su contraseña.
 3. En el encabezado debe aparecer la etiqueta del rol y **Cerrar sesión**, y en las tarjetas los botones de eliminar.
 4. Elimina el archivo y luego la actividad `PRUEBA ROLES`. Recarga: ya no deben estar, y el archivo tampoco en **Storage → cronograma-archivos**.
