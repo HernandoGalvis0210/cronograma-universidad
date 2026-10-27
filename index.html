@@ -120,7 +120,9 @@ body.dark-mode .date{color:var(--on-primary);}
 .activity-location,.activity-responsible{display:flex;align-items:flex-start;min-width:0;gap:6px;}
 .activity-location{margin-bottom:3px!important;color:var(--secondary)!important;font-weight:600;}
 .activity-responsible{color:var(--muted);}
-.metadata-icon{flex:0 0 auto;line-height:1.55;}
+.metadata-icon{display:inline-flex;flex:0 0 auto;align-items:center;height:1.55em;}
+.icon{display:inline-block;flex:none;width:1em;height:1em;vertical-align:-.125em;}.theme-btn .icon{width:20px;height:20px;}.role-chip .icon{margin-right:6px;}.file-name .icon{color:var(--muted);}
+.note-remove{height:max-content;padding:4px 9px;font-size:.75rem;border-radius:6px;}
 .metadata-content{display:flex;flex:1 1 auto;flex-wrap:wrap;min-width:0;gap:0 .32rem;overflow-wrap:break-word;word-break:normal;}
 .metadata-content b{flex:0 0 auto;white-space:nowrap;}
 .metadata-content span{min-width:0;overflow-wrap:break-word;word-break:normal;}
@@ -132,7 +134,7 @@ body.dark-mode .date{color:var(--on-primary);}
 .card.open .details{display:block;animation:reveal-details .22s ease-out;}
 @keyframes reveal-details{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 .detail-grid{display:grid;grid-template-columns:1fr 1fr;align-items:start;width:100%;gap:36px;}
-.section-title{margin-bottom:9px;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+.section-title{display:block;margin-bottom:9px;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
 .notes-log{max-height:250px;min-height:54px;padding:12px;background:var(--surface-muted);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:.88rem;overflow-wrap:anywhere;overflow-y:auto;word-break:break-word;}
 .notes-log a{color:var(--secondary);font-weight:700;word-break:break-all;}
 .notes{width:100%;max-width:100%;min-height:76px;padding:11px 12px;color:var(--text);background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);font:inherit;resize:vertical;overflow-wrap:break-word;}
@@ -284,19 +286,19 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
 <header>
   <div class="container header-flex">
     <div>
-      <h1>📅 Cronograma de Actividades</h1>
+      <h1>Cronograma de Actividades</h1>
       <p class="subtitle">Planificación, responsables y archivos de cada actividad</p>
     </div>
     <div class="header-actions">
       <div class="auth-area" id="authArea" aria-live="polite"></div>
-      <button id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+      <button type="button" id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar a tema oscuro" aria-label="Cambiar a tema oscuro"></button>
     </div>
   </div>
 </header>
 
 <main class="container">
   <div class="toolbar">
-    <button class="add" onclick="openActivityModal()">＋ Nueva actividad</button>
+    <button class="add" onclick="openActivityModal()">Nueva actividad</button>
     <button class="filter active" data-filter="all">Todas</button>
     <button class="filter" data-filter="pending">Pendientes</button>
     <button class="filter" data-filter="approved">Aprobadas</button>
@@ -304,14 +306,14 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
   </div>
 
   <div class="stats">
-    <div class="stat"><strong id="total">0</strong><span>Actividades</span></div>
+    <div class="stat" title="Pendientes + aprobadas: las que muestra la pestaña Todas"><strong id="total">0</strong><span>En curso</span></div>
     <div class="stat"><strong id="pendingCount">0</strong><span>Pendientes</span></div>
     <div class="stat"><strong id="approvedCount">0</strong><span>Aprobadas</span></div>
     <div class="stat"><strong id="doneCount">0</strong><span>Completadas</span></div>
   </div>
 
   <div class="help">
-    <b>💡 Cómo usarlo:</b> Haz clic sobre el título de cualquier actividad para abrir sus detalles, guardar enlaces, agregar notas y gestionar archivos.
+    <b>Cómo usarlo:</b> Haz clic sobre el título de cualquier actividad para abrir sus detalles, guardar enlaces, agregar notas y gestionar archivos.
   </div>
 
   <section id="timeline" class="timeline"></section>
@@ -321,15 +323,15 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
  <div class="modal-box">
   <h2 id="modalTitle">Nueva actividad</h2>
   <div class="form-grid">
-   <div><label>Actividad</label><input id="fTitle" placeholder="Nombre de la actividad"></div>
+   <div><label>Actividad</label><input id="fTitle" maxlength="300" placeholder="Nombre de la actividad"></div>
    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
      <div><label>Fecha inicio</label><input type="date" id="fDateStart"></div>
      <div><label>Fecha fin (opcional)</label><input type="date" id="fDateEnd"></div>
    </div>
-   <div><label>Sedes / Desglose de fechas</label><input id="fLocation" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
-   <div><label>Responsable(s)</label><input id="fResponsible" placeholder="Nombre del responsable"></div>
-   <div>
-     <label>Estado</label>
+   <div><label>Sedes / Desglose de fechas</label><input id="fLocation" maxlength="1000" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
+   <div><label>Responsable(s)</label><input id="fResponsible" maxlength="500" placeholder="Nombre del responsable"></div>
+   <div id="fStatusField">
+     <label for="fStatus">Estado</label>
      <select id="fStatus">
        <option value="pending">Pendiente</option>
        <option value="approved">Aprobado</option>
@@ -348,7 +350,7 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
  <div class="modal-box">
   <h2 id="loginTitle">Acceso revisores</h2>
   <form id="loginForm" class="form-grid" novalidate>
-   <p class="login-help">Solo para cuentas con rol de revisión. Ver y crear actividades o subir archivos no requiere iniciar sesión.</p>
+   <p class="login-help">Solo para cuentas con rol de revisión: editar, cambiar el estado y eliminar. Ver y crear actividades, subir archivos o agregar notas no requiere iniciar sesión.</p>
    <div><label for="loginUser">Usuario</label><input type="text" id="loginUser" placeholder="Usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required></div>
    <div><label for="loginPassword">Contraseña</label><input type="password" id="loginPassword" autocomplete="current-password" required></div>
    <div id="loginError" class="form-error" role="alert" hidden></div>
@@ -361,17 +363,64 @@ select,input{width:100%;max-width:100%;padding:9px 10px;color:var(--text);backgr
 </div>
 
 <script>
+// --- LÍMITES DE SUBIDA DE ARCHIVOS ---
+// Se comprueban en la página antes de subir. Si el bucket tiene su propio
+// límite de tamaño o de tipos, Supabase también lo aplica.
+const MAX_UPLOAD_MB = 10;
+const MAX_FILE_NAME_LENGTH = 255; // igual que el CHECK de cronograma_archivos.name
+// Extensión permitida → tipos MIME aceptados para ella.
+const ALLOWED_UPLOAD_TYPES = {
+  pdf:  ["application/pdf"],
+  doc:  ["application/msword"],
+  docx: ["application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+  xls:  ["application/vnd.ms-excel"],
+  xlsx: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+  ppt:  ["application/vnd.ms-powerpoint"],
+  pptx: ["application/vnd.openxmlformats-officedocument.presentationml.presentation"],
+  jpg:  ["image/jpeg"],
+  jpeg: ["image/jpeg"],
+  png:  ["image/png"],
+  webp: ["image/webp"]
+};
+const ALLOWED_UPLOAD_LABEL = "PDF, Word, Excel, PowerPoint, JPG, PNG o WebP";
+const UPLOAD_ACCEPT = Object.keys(ALLOWED_UPLOAD_TYPES).map(ext => "." + ext).join(",");
+// ------------------------------------
+
+// --- ICONOS (SVG de línea, heredan el color del texto) ---
+// Decorativos: siempre aria-hidden; el texto o el aria-label del control
+// es el que da el significado.
+const ICONOS = {
+  sede: '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  persona: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  archivo: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
+  sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+};
+function icon(nombre){
+  return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONOS[nombre]}</svg>`;
+}
+// ------------------------------------
+
 // --- CONFIGURACIÓN DE TEMA OSCURO ---
+// El botón muestra el tema al que se cambia (sol en oscuro, luna en claro).
+function paintThemeButton(){
+  const isDark = document.body.classList.contains('dark-mode');
+  const btn = document.getElementById('themeToggle');
+  const label = isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+  btn.innerHTML = icon(isDark ? 'sol' : 'luna');
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
 function toggleTheme() {
   document.body.classList.toggle('dark-mode');
   const isDark = document.body.classList.contains('dark-mode');
   localStorage.setItem('theme', isDark ? 'dark' : 'light');
-  document.getElementById('themeToggle').textContent = isDark ? '☀️' : '🌙';
+  paintThemeButton();
 }
 if(localStorage.getItem('theme') === 'dark') {
   document.body.classList.add('dark-mode');
-  document.getElementById('themeToggle').textContent = '☀️';
 }
+paintThemeButton();
 // ------------------------------------
 
 const { createClient } = supabase;
@@ -382,6 +431,9 @@ const supabaseClient = createClient(supabaseUrl, supabaseKey);
 let activities = [];
 let filesData = {};
 const statusText={pending:"Pendiente", approved:"Aprobado", done:"Completada"};
+// Estados que muestra la pestaña "Todas" y que cuenta "En curso". Las
+// completadas quedan fuera y se ven en su pestaña (decisión de la fase 5).
+const ACTIVE_STATUSES=["pending","approved"];
 let currentFilter="all";
 let editingId=null;
 let openCards = [];
@@ -396,9 +448,13 @@ let currentRole=null;
 let authVersion=0;
 let loginReturnFocus=null;
 
-function canDelete(){
+function isReviewer(){
   return !!currentSession && Object.hasOwn(roleText, currentRole);
 }
+// Eliminar, editar la actividad y cambiar su estado: solo revisores.
+// Crear, subir archivos y agregar notas: todos.
+function canDelete(){ return isReviewer(); }
+function canEdit(){ return isReviewer(); }
 
 async function loadRole(session){
   if(!session) return null;
@@ -413,6 +469,8 @@ async function applySession(session){
   if(version !== authVersion) return; // llegó un cambio de sesión más reciente
   currentSession = session;
   currentRole = role;
+  if(editingId && !canEdit() && document.getElementById("activityModal").classList.contains("show")) closeActivityModal();
+  syncStatusField();
   renderAuthArea();
   render();
 }
@@ -420,13 +478,13 @@ async function applySession(session){
 function renderAuthArea(){
   const area = document.getElementById("authArea");
   if(!currentSession){
-    area.innerHTML = `<button type="button" class="auth-btn" id="loginOpenBtn">🔐 Acceso revisores</button>`;
+    area.innerHTML = `<button type="button" class="auth-btn" id="loginOpenBtn">Acceso revisores</button>`;
     document.getElementById("loginOpenBtn").addEventListener("click", openLoginModal);
     return;
   }
   const label = currentRole ? roleText[currentRole] : "Sin rol asignado";
   area.innerHTML = `
-    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="Usuario: ${escapeHtml(String(currentSession.user.email || '').split('@')[0])}">👤 ${escapeHtml(label)}</span>
+    <span class="role-chip ${currentRole ? '' : 'no-role'}" title="Usuario: ${escapeHtml(String(currentSession.user.email || '').split('@')[0])}">${icon('persona')}${escapeHtml(label)}</span>
     <button type="button" class="auth-btn" id="logoutBtn">Cerrar sesión</button>`;
   document.getElementById("logoutBtn").addEventListener("click", logout);
 }
@@ -489,7 +547,7 @@ async function submitLogin(e){
   }
   const btn = document.getElementById("loginSubmit");
   btn.disabled = true;
-  btn.textContent = "⏳ Ingresando...";
+  btn.textContent = "Ingresando...";
   setLoginError("");
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -544,8 +602,16 @@ supabaseClient.channel('realtime_sync')
   .on('postgres_changes', { event: '*', schema: 'public', table: 'cronograma_archivos' }, payload => fetchData())
   .subscribe();
 
+// El estado solo lo eligen los revisores; las actividades nuevas de los
+// demás se crean como pendientes.
+function syncStatusField(){
+ document.getElementById("fStatusField").hidden = !canEdit();
+}
+
 function openActivityModal(id=null){
+ if(id && !canEdit()){ alert(PERMISSION_MSG); return; }
  editingId=id;
+ syncStatusField();
  const a=id?activities.find(x=>x.id===id):null;
  document.getElementById("modalTitle").textContent=a?"Editar actividad":"Nueva actividad";
  document.getElementById("fTitle").value=a?.title||"";
@@ -578,6 +644,9 @@ function closeActivityModal(){document.getElementById("activityModal").classList
 // --- ERRORES Y PERMISOS ---
 const BUCKET = 'cronograma-archivos';
 const PERMISSION_MSG = "No tienes permisos para realizar esta acción. Si eres revisor, inicia sesión con «Acceso revisores».";
+const TOO_LONG_MSG = "No se guardó: el texto es demasiado largo. Acórtalo e inténtalo de nuevo.";
+// Igual que los CHECK de roles-2.sql (en caracteres).
+const MAX_NOTES_LENGTH = 50000;
 const NO_ROWS_MSG = "No se aplicó el cambio: no tienes permisos o el registro ya no existe. Si eres revisor, inicia sesión con «Acceso revisores».";
 
 function isPermissionError(error){
@@ -587,7 +656,9 @@ function isPermissionError(error){
 }
 
 function errorMessage(error, fallback){
-  return isPermissionError(error) ? PERMISSION_MSG : `${fallback}\n\nDetalle: ${error?.message || error}`;
+  if(isPermissionError(error)) return PERMISSION_MSG;
+  if(error?.code === "23514") return TOO_LONG_MSG; // CHECK de longitud de roles-2.sql
+  return `${fallback}\n\nDetalle: ${error?.message || error}`;
 }
 
 // Con RLS, un UPDATE o DELETE no permitido no da error: afecta 0 filas.
@@ -648,8 +719,9 @@ async function saveActivity(){
  }
  const location=document.getElementById("fLocation").value.trim();
  const responsible=document.getElementById("fResponsible").value.trim();
- const status=document.getElementById("fStatus").value;
- 
+ const status=canEdit() ? document.getElementById("fStatus").value : "pending";
+ if(editingId && !canEdit()){ alert(PERMISSION_MSG); return; }
+
  if(!title||!finalDate||!responsible){alert("Completa actividad, fecha de inicio y responsable.");return;}
  
  const values = {title, date: finalDate, location, responsible, status};
@@ -697,7 +769,7 @@ function toggleCard(id){
 function linkify(text) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   return escapeHtml(text).replace(urlRegex, function(url) {
-    return `<a href="${url}" target="_blank">${url}</a>`;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
   });
 }
 
@@ -714,7 +786,7 @@ function renderNotesLog(id, rawNotes) {
   return notesArray.map((note, idx) => `
     <div style="display:flex; justify-content:space-between; gap:10px; margin-bottom:10px; border-bottom:1px solid var(--border); padding-bottom:10px;">
       <div style="flex:1; white-space:pre-wrap; word-break:break-word;">${linkify(note)}</div>
-      <button class="delete" style="padding:4px 8px; font-size:10px; height:max-content; border-radius:6px;" data-action="delete-note" data-id="${Number(id)}" data-index="${idx}" title="Borrar nota">❌</button>
+      <button type="button" class="delete note-remove" data-action="delete-note" data-id="${Number(id)}" data-index="${idx}" title="Quitar nota" aria-label="Quitar nota">Quitar</button>
     </div>
   `).join('');
 }
@@ -735,12 +807,13 @@ async function deleteNote(id, index) {
 
 function render(){
  const box=document.getElementById("timeline"); box.innerHTML="";
- let shown=activities.filter(a=>currentFilter==="all" ? a.status!=="done" : a.status===currentFilter);
+ let shown=activities.filter(a=>currentFilter==="all" ? ACTIVE_STATUSES.includes(a.status) : a.status===currentFilter);
  shown.sort((a,b)=>activityDateValue(a)-activityDateValue(b));
  shown.forEach(a=>{
   const id = Number(a.id);
   const fList = filesData[a.id] || [];
   const isOpen = openCards.includes(id) ? 'open' : '';
+  const editable = canEdit();
 
   const el=document.createElement("article");
   el.className="activity";
@@ -752,8 +825,8 @@ function render(){
      <div class="card-head-content">
       <div class="date">${escapeHtml(a.date)}</div>
       <h2 class="title">${escapeHtml(a.title)}</h2>
-      ${a.location ? `<div class="responsible activity-location" style="margin-bottom:4px; color:var(--secondary)"><span class="metadata-icon">📍</span><span class="metadata-content"><b>Sedes:</b> <span>${escapeHtml(a.location)}</span></span></div>` : ''}
-      <div class="responsible activity-responsible"><span class="metadata-icon">👤</span><span class="metadata-content"><b>Responsable:</b> <span>${escapeHtml(a.responsible)}</span></span></div>
+      ${a.location ? `<div class="responsible activity-location" style="margin-bottom:4px; color:var(--secondary)"><span class="metadata-icon">${icon('sede')}</span><span class="metadata-content"><b>Sedes:</b> <span>${escapeHtml(a.location)}</span></span></div>` : ''}
+      <div class="responsible activity-responsible"><span class="metadata-icon">${icon('persona')}</span><span class="metadata-content"><b>Responsable:</b> <span>${escapeHtml(a.responsible)}</span></span></div>
      </div>
      <span class="badge ${escapeHtml(a.status)}">${escapeHtml(statusText[a.status])}</span>
     </div>
@@ -762,14 +835,15 @@ function render(){
      <div class="detail-grid">
 
       <div>
-       <div class="section-title">Actualizar Estado</div>
-       <select data-action="change-status" data-id="${id}">
+       ${editable ? `
+       <label class="section-title" for="status-${id}">Actualizar Estado</label>
+       <select id="status-${id}" data-action="change-status" data-id="${id}">
         <option value="pending" ${a.status==="pending"?"selected":""}>Pendiente</option>
         <option value="approved" ${a.status==="approved"?"selected":""}>Aprobado</option>
         <option value="done" ${a.status==="done"?"selected":""}>Completada</option>
-       </select>
-       
-       <div class="section-title" style="margin-top:24px">Historial de Observaciones y Enlaces</div>
+       </select>` : ''}
+
+       <div class="section-title" ${editable ? 'style="margin-top:24px"' : ''}>Historial de Observaciones y Enlaces</div>
        <div class="notes-log">
           ${renderNotesLog(id, a.notes)}
        </div>
@@ -783,18 +857,19 @@ function render(){
         ${fileHTML(a,fList)}
        </div>
        <label class="file-label add" style="display:inline-block;margin-top:10px">
-        📎 Agregar archivo
-        <input type="file" multiple hidden data-action="add-files" data-id="${id}">
+        Agregar archivo
+        <input type="file" multiple hidden accept="${UPLOAD_ACCEPT}" data-action="add-files" data-id="${id}">
        </label>
       </div>
 
      </div>
     </div>
 
+    ${editable || canDelete() ? `
     <div class="card-foot">
-      <button class="toggle" data-action="edit-activity" data-id="${id}">✏️ Editar Actividad</button>
-      ${canDelete() ? `<button class="delete" data-action="delete-activity" data-id="${id}">🗑️ Eliminar Actividad</button>` : ''}
-    </div>
+      ${editable ? `<button class="toggle" data-action="edit-activity" data-id="${id}">Editar actividad</button>` : ''}
+      ${canDelete() ? `<button class="delete" data-action="delete-activity" data-id="${id}">Eliminar actividad</button>` : ''}
+    </div>` : ''}
    </div>
   `;
   box.appendChild(el);
@@ -806,7 +881,7 @@ function fileHTML(a,files){
  if(!files.length)return '<div class="empty">No hay archivos asociados todavía.</div>';
  return files.map(f=>`
   <div class="file-row">
-   <span class="file-name" title="${escapeHtml(f.name)}">📄 ${escapeHtml(f.name)}</span>
+   <span class="file-name" title="${escapeHtml(f.name)}">${icon('archivo')} ${escapeHtml(f.name)}</span>
    <div class="file-actions">
     <button class="toggle" data-action="open-file" data-file-id="${Number(f.id)}">Abrir</button>
     ${canDelete() ? `<button class="delete" data-action="remove-file" data-file-id="${Number(f.id)}">Eliminar</button>` : ''}
@@ -819,6 +894,7 @@ function findFile(fileId){
 }
 
 async function changeStatus(id,status){
+ if(!canEdit()){ alert(PERMISSION_MSG); render(); return; }
  const ok = await runWrite(supabaseClient.from('cronograma_actividades').update({status}).eq('id', id), "No se pudo cambiar el estado.");
  const activity = activities.find(a => a.id === id);
  if(ok && activity) activity.status = status;
@@ -829,34 +905,81 @@ async function appendNote(id, btn){
  const textarea = document.getElementById("new-note-"+id);
  const newText = textarea.value.trim();
  if(!newText) return;
- btn.textContent = "⏳ Guardando...";
+ btn.textContent = "Guardando...";
  const a = activities.find(x => x.id === id);
  let updatedNotes = a.notes ? a.notes + "\n\n• " + newText : "• " + newText;
+ if(updatedNotes.length > MAX_NOTES_LENGTH){
+   alert(`El registro de notas de esta actividad llegó a su máximo (${MAX_NOTES_LENGTH.toLocaleString('es')} caracteres). Acorta la nota o borra notas antiguas.`);
+   btn.textContent = "Guardar en el registro";
+   return;
+ }
  const ok = await runWrite(supabaseClient.from('cronograma_actividades').update({notes: updatedNotes}).eq('id', id), "Error al guardar la nota.");
  if(!ok){
    btn.textContent = "Guardar en el registro";
  } else {
    textarea.value = "";
-   btn.textContent = "✓ ¡Guardado!";
+   btn.textContent = "Guardado";
    setTimeout(() => btn.textContent = "Guardar en el registro", 1500);
  }
+}
+
+function fileExtension(name){
+  const parts = String(name).toLowerCase().split('.');
+  return parts.length > 1 ? parts.pop() : "";
+}
+
+// Devuelve el motivo por el que no se puede subir el archivo, o null si vale.
+function uploadProblem(file){
+  const ext = fileExtension(file.name);
+  const allowed = Object.hasOwn(ALLOWED_UPLOAD_TYPES, ext) ? ALLOWED_UPLOAD_TYPES[ext] : null;
+  // Algunos sistemas no informan el tipo (file.type vacío): basta la extensión.
+  if(!allowed || (file.type && !allowed.includes(file.type))){
+    return `• "${file.name}": tipo de archivo no permitido.`;
+  }
+  if(file.size > MAX_UPLOAD_MB * 1024 * 1024){
+    return `• "${file.name}": pesa ${(file.size / 1024 / 1024).toFixed(1).replace('.', ',')} MB (máximo ${MAX_UPLOAD_MB} MB).`;
+  }
+  if(file.name.length > MAX_FILE_NAME_LENGTH){
+    return `• "${file.name.slice(0, 40)}…": el nombre es demasiado largo (máximo ${MAX_FILE_NAME_LENGTH} caracteres).`;
+  }
+  return null;
+}
+
+// Rechazos propios del bucket (límite de tamaño o tipos configurados en Supabase).
+function uploadErrorMessage(error, file){
+  const status = String(error?.statusCode ?? error?.status ?? "");
+  const msg = String(error?.message || "").toLowerCase();
+  if(status === "413" || msg.includes("maximum allowed size") || msg.includes("too large")){
+    return `"${file.name}" supera el tamaño máximo que permite el almacenamiento. Reduce el archivo e inténtalo de nuevo.`;
+  }
+  if(status === "415" || msg.includes("mime type")){
+    return `El almacenamiento no acepta el tipo de "${file.name}". Se permiten ${ALLOWED_UPLOAD_LABEL}.`;
+  }
+  return errorMessage(error, `Error al subir el archivo "${file.name}".`);
 }
 
 async function addFiles(id, input){
   const files = Array.from(input.files);
   if (files.length === 0) return;
+  const rejected = files.map(uploadProblem).filter(Boolean);
+  if(rejected.length){
+    alert(`No se subirán estos archivos:\n\n${rejected.join("\n")}\n\nSe permiten ${ALLOWED_UPLOAD_LABEL}, de hasta ${MAX_UPLOAD_MB} MB cada uno.`);
+  }
+  const valid = files.filter(f => !uploadProblem(f));
+  if(valid.length === 0){ input.value = ""; return; }
   const labelDiv = input.parentElement;
   const originalText = labelDiv.innerHTML;
-  labelDiv.innerHTML = "⏳ Subiendo...";
+  labelDiv.textContent = "Subiendo...";
   try {
-    for(let file of files){
-      const fileExt = file.name.split('.').pop();
+    for(let file of valid){
+      const fileExt = fileExtension(file.name);
+      const contentType = file.type || ALLOWED_UPLOAD_TYPES[fileExt][0];
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const { error: uploadError } = await supabaseClient.storage.from(BUCKET).upload(fileName, file);
+      const { error: uploadError } = await supabaseClient.storage.from(BUCKET).upload(fileName, file, { contentType });
       if(uploadError){
-        alert(errorMessage(uploadError, `Error al subir el archivo "${file.name}".`));
+        alert(uploadErrorMessage(uploadError, file));
       } else {
-        const { error: dbError } = await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: file.type}]);
+        const { error: dbError } = await supabaseClient.from('cronograma_archivos').insert([{activity_id: id, name: file.name, path: fileName, type: contentType}]);
         if(dbError) alert(errorMessage(dbError, `El archivo "${file.name}" se subió, pero no se pudo registrar.`));
       }
     }
@@ -871,7 +994,7 @@ async function addFiles(id, input){
 
 async function downloadFile(path){
  const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(path);
- if(data) window.open(data.publicUrl, '_blank');
+ if(data) window.open(data.publicUrl, '_blank', 'noopener,noreferrer');
 }
 
 async function removeFile(fileId, path){
@@ -883,7 +1006,7 @@ async function removeFile(fileId, path){
 }
 
 function updateStats(){
- document.getElementById("total").textContent=activities.length;
+ document.getElementById("total").textContent=activities.filter(a=>ACTIVE_STATUSES.includes(a.status)).length;
  document.getElementById("pendingCount").textContent=activities.filter(a=>a.status==="pending").length;
  document.getElementById("approvedCount").textContent=activities.filter(a=>a.status==="approved").length;
  document.getElementById("doneCount").textContent=activities.filter(a=>a.status==="done").length;

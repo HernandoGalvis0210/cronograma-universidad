@@ -46,10 +46,23 @@ Campos usados por el código (inferidos; se lee con `select('*')`):
 | `type` | MIME type |
 
 ### Roles y RLS
-`supabase/roles.sql` (se ejecuta a mano en el SQL Editor; guía en `supabase/LEEME.md`): tabla `perfiles (id → auth.users, rol)`, función `es_revisor()` y políticas: select/insert abiertos, update abierto (TODO), delete solo `es_revisor()` en ambas tablas y en el bucket. FK `activity_id` con ON DELETE CASCADE (no borra archivos del bucket). Nunca usar la clave `service_role` en el repo.
+Se ejecutan a mano en el SQL Editor, en orden (guía en `supabase/LEEME.md`). Si se vuelve a ejecutar `roles.sql`, hay que ejecutar `roles-2.sql` otra vez. Nunca usar la clave `service_role` en el repo.
+
+- `supabase/roles.sql`: tabla `perfiles (id → auth.users, rol)`, función `es_revisor()` y políticas: select/insert abiertos, update de actividades abierto (lo limita el trigger de `roles-2.sql`), delete solo `es_revisor()` en ambas tablas y en el bucket. FK `activity_id` con ON DELETE CASCADE (no borra archivos del bucket).
+- `supabase/roles-2.sql`: trigger BEFORE UPDATE `cronograma_actividades_solo_notas` (quien no es revisor solo cambia `notes`; si no, error `42501`; no afecta a `postgres` ni `service_role`). `cronograma_archivos` sin UPDATE (ni política ni privilegio) y `UNIQUE (path)`. SELECT de `storage.objects` del bucket solo para revisores. CHECK de longitud (caracteres): `title` 300, `date` 60, `location` 1000, `responsible` 500, `notes` 50 000, `cronograma_archivos.name` 255 (error `23514`). Política `actividades_insert` reemplazada: `with check (status = 'pending' or es_revisor())` (si no, `42501`); CHECK `status in ('pending','approved','done')`, no nulo. Trae consultas de verificación y reversión comentadas. `roles.sql` recrea `actividades_insert` abierta.
+
+Permisos vigentes:
+
+| Acción | Todos (sin sesión) | Revisores |
+|---|---|---|
+| Ver, subir y abrir archivos, agregar notas | ✅ | ✅ |
+| Crear actividades | ✅ solo `pending` (RLS) | ✅ cualquier estado |
+| Borrar notas | ✅ (pendiente: mover notas a su propia tabla) | ✅ |
+| Editar título/fecha/sedes/responsable, cambiar estado | ❌ | ✅ |
+| Eliminar actividades y archivos | ❌ | ✅ |
 
 ### Storage
-Bucket `cronograma-archivos` (público: los archivos se abren con `getPublicUrl`).
+Bucket `cronograma-archivos` (público: los archivos se abren con `getPublicUrl`, que no pasa por RLS; listar/descargar por la API solo revisores). Subida validada en la página con las constantes del inicio del script principal: `MAX_UPLOAD_MB` (10), `ALLOWED_UPLOAD_TYPES` (extensión → MIME: PDF, Word, Excel, PowerPoint, JPG, PNG, WebP) y `MAX_FILE_NAME_LENGTH`; `uploadErrorMessage()` traduce los rechazos del bucket (413/415). Recomendado configurar el mismo límite en el bucket (LEEME, paso F2.3).
 
 ### Realtime
 Canal `realtime_sync` escucha `*` en ambas tablas y vuelve a llamar a `fetchData()`.
@@ -60,6 +73,7 @@ Canal `realtime_sync` escucha `*` en ambas tablas y vuelve a llamar a `fetchData
 - **Un solo archivo**: no separar CSS/JS en archivos aparte ni introducir bundlers/frameworks.
 - Usar las **variables CSS existentes** (`--primary`, `--secondary`, `--brand-crimson`, `--card`, `--border`, `--radius-*`, `--shadow-*`, `--pending/approved/done(-bg)`, etc.) en lugar de colores fijos, para que funcionen en tema claro y oscuro (`body.dark-mode`).
 - Identidad: dorado (`--brand-gold`), azul marino (`--brand-navy`), carmesí (`--brand-crimson`) para acciones destructivas.
+- Sin emojis en la interfaz (textos, `title`/`aria-label`, mensajes): texto sobrio. Si un icono aporta, usar `icon('sede'|'persona'|'archivo'|'sol'|'luna')` (SVG de línea de `ICONOS`, `currentColor`, `aria-hidden`); un botón solo con icono lleva `aria-label` y `title`.
 - Estilo de código: CSS compacto en una línea por regla; JS sin framework, handlers `onclick` inline, `async/await` con `supabaseClient`.
 - Al insertar datos en HTML usar siempre `escapeHtml()`. En las tarjetas no se usan `onclick`/`onchange` inline: los botones llevan `data-action` + `data-id` (ids numéricos) y un listener delegado en `#timeline` despacha la acción. Para nuevas acciones, añadir un `case` ahí en lugar de interpolar datos en atributos.
 
@@ -78,10 +92,13 @@ En curso (rama `feature/roles`):
    - Cuentas en Supabase Auth: `superior@cronograma.local`, `academico@cronograma.local`, `administracion@cronograma.local`, creadas con "Auto Confirm User" (el dominio no recibe correo). Son cuentas por **cargo**: al cambiar la persona se cambia la contraseña y se cierran sus sesiones (pasos en `supabase/LEEME.md`).
    - Nunca escribir contraseñas ni claves (`service_role`) en archivos del repo.
 7. Roles y permisos: `supabase/roles.sql` (hay que aplicarlo en el panel) + rol leído de `perfiles` en cada cambio de sesión. ✅ cliente.
-8. Restricción de eliminación: botones solo si `canDelete()`; la RLS es la que decide. Pendiente: decidir quién puede editar y borrar notas (UPDATE sigue abierto).
+8. Restricción de eliminación: botones solo si `canDelete()`; la RLS es la que decide.
+
+En curso (rama `feature/permisos-edicion`):
+9. Permisos de edición: `supabase/roles-2.sql` (hay que aplicarlo en el panel). En la página, el selector de estado, "✏️ Editar Actividad" y el campo Estado del formulario solo se renderizan si `canEdit()`; sin rol las actividades nuevas se crean `pending`. Enlaces `target="_blank"` con `rel="noopener noreferrer"`. Validación de subida y `maxlength` en los campos. Pendiente: borrar notas (mover las notas a su propia tabla).
 
 Patrones del cliente para escrituras:
 - `runWrite(query, mensaje)`: añade `.select('id')` y avisa si hubo error o si se afectaron 0 filas (la RLS rechaza UPDATE/DELETE sin dar error).
 - `removeFromBucket(paths)`: borra de Storage y comprueba en la URL pública lo que no se devolvió como borrado; siempre antes de borrar filas.
-- `errorMessage(error, mensaje)`: mensaje amable para errores de permisos (`42501`, 401/403, RLS).
-- El rol nunca se guarda en `localStorage`; `canDelete()` solo decide qué se muestra.
+- `errorMessage(error, mensaje)`: mensaje amable para errores de permisos (`42501` —también el del trigger—, 401/403, RLS) y para textos demasiado largos (`23514`).
+- El rol nunca se guarda en `localStorage`; `isReviewer()` / `canDelete()` / `canEdit()` solo deciden qué se muestra. Cada acción restringida también comprueba su función antes de llamar a Supabase.
