@@ -6,7 +6,7 @@ Cronograma web para que una representación estudiantil planifique actividades, 
 
 No hay build ni dependencias locales. `supabase-js` se carga desde jsDelivr con versión **exacta** (`@2.118.0`, en el `<head>` de `index.html`); para actualizarla, cambiar el número a propósito y probar.
 
-- Los módulos ES **no cargan desde `file://`** (abrir `index.html` con doble clic deja la página en el splash). Hay que servirlo: `python -m http.server 8080` y abrir `http://localhost:8080`.
+- Los módulos ES **no cargan desde `file://`** (abrir `index.html` con doble clic deja la página en el splash). Hay que servirlo: `python -m http.server 8080` y abrir `http://localhost:8080`. En Windows ese servidor solo encola 5 conexiones y, de vez en cuando, rechaza alguna de las peticiones en paralelo (CSS, módulos, logo): si falla un módulo, a los 8 s sale el aviso de la red de seguridad; basta con recargar. En Vercel no pasa.
 - Requiere conexión a internet (CDN y proyecto Supabase).
 
 ## Estructura
@@ -34,6 +34,7 @@ supabase/         SQL de roles y RLS + guía (se aplica a mano en el panel)
 
 - Los CSS se enlazan en el orden de arriba: el orden importa en la cascada.
 - En el `<head>` va en línea solo la capa base del splash (`.splash`, `.splash-logo`, `body.splash-active` y `@keyframes splash-respaldo`) para que tape la página desde el primer pintado; el resto está en `splash.css`.
+- **Red de seguridad del arranque** (script ES5 en línea en el `<head>`, junto a los estilos de `.fallo-arranque`): si a los 8 s desde el inicio `main.js` no se ha ejecutado (falló un módulo, la CDN de supabase-js o la red), oculta el splash y pone en `<main>` el aviso `role="alert"` "No se pudo cargar la aplicación. Revisa tu conexión y recarga la página." con el botón "Recargar". La primera línea ejecutable de `main.js` llama a `window.cancelarRedDeArranque()`: cancela el temporizador y, si la aplicación llegó tarde, quita el aviso. Oculta el splash (no lo elimina) para que el script del splash lo encuentre si llega a ejecutarse. No depender de módulos ni de supabase-js dentro de ese script.
 - Splash:
   - Tiempos en las constantes `TIEMPOS` (entrada 600 / permanencia 1200 / salida 700 ms) y `TIEMPOS_REDUCIDOS` (500 / 700 / 300 ms, solo fundido) al inicio de `js/main.js`. Cuentan desde que el logo se decodifica (`logo.decode()`, máx. `ESPERA_MAX_LOGO`), nunca desde `load` ni Supabase.
   - Con `prefers-reduced-motion` el splash **no se quita**: se muestra sin escalado. Al terminar se elimina del DOM; `splash-respaldo` (CSS) lo oculta a los 8 s si el script fallara. Es `aria-hidden`.

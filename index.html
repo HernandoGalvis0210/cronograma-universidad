@@ -6,14 +6,58 @@
 <title>Cronograma de Actividades</title>
 <!-- El logo del splash se pide en cuanto se lee el head, antes que el resto. -->
 <link rel="preload" href="assets/logo.png" as="image" fetchpriority="high">
-<!-- Capa mínima del splash en línea: tapa la página desde el primer pintado aunque
-     los CSS tarden, y se retira sola a los 8 s si el script del splash fallara. -->
+<!-- Capa mínima en línea: el splash tapa la página desde el primer pintado aunque los CSS
+     tarden y se retira solo a los 8 s si su script fallara; la red de seguridad del arranque
+     lo quita y avisa si la aplicación no llegó a arrancar. -->
 <style>
 body.splash-active{overflow:hidden;}
 .splash{position:fixed;inset:0;z-index:100;display:grid;place-items:center;padding:24px;overflow:hidden;background:#fff;animation:splash-respaldo 1ms linear 8s forwards;}
 .splash-logo{display:block;width:min(78vw,780px);max-height:70vh;object-fit:contain;opacity:0;transform:scale(.96);}
 @keyframes splash-respaldo{to{opacity:0;visibility:hidden;}}
+/* Aviso de la red de seguridad del arranque (mismo aspecto que .help y .add; los valores tras la coma sirven si los CSS no cargaron). */
+.fallo-arranque{margin:0 0 22px;padding:16px 18px;color:var(--text,#10182f);background:var(--card,#fff);border:1px solid var(--border,#d8dce3);border-left:4px solid var(--primary,#f7c600);border-radius:var(--radius-md,14px);box-shadow:var(--shadow-sm,0 1px 2px rgba(17,29,66,.06));font-family:Inter,"Segoe UI",Arial,sans-serif;line-height:1.5;}
+.fallo-arranque p{margin:0 0 12px;}
+.fallo-arranque button{border:0;border-radius:var(--radius-sm,10px);padding:11px 15px;color:var(--on-primary,#111d42);background:var(--primary,#f7c600);font:inherit;font-size:.9rem;font-weight:700;line-height:1.2;cursor:pointer;}
+.fallo-arranque button:hover{background:var(--primary-hover,#dcae00);}
+.fallo-arranque button:focus-visible{outline:3px solid rgba(247,198,0,.55);outline-offset:2px;}
 </style>
+<script>
+  // Red de seguridad del arranque. Independiente de main.js y de supabase-js (ES5 a propósito).
+  // Si a los 8 s desde el inicio la aplicación no ha arrancado (falló un módulo, la CDN o la red),
+  // oculta el splash y muestra un aviso con "Recargar". main.js la cancela en cuanto se ejecuta:
+  // en una carga normal no hace nada ni deja el temporizador pendiente, y si la aplicación
+  // arranca tarde, después del aviso, lo quita. El splash se oculta en vez de eliminarse para
+  // que su script, si llega a ejecutarse, lo encuentre y lo retire como siempre.
+  (function () {
+    var LIMITE_MS = 8000;
+    var cancelada = false;
+    var aviso = null;
+    function avisar() {
+      if(cancelada) return;
+      var splash = document.getElementById('splash');
+      if(splash) splash.style.display = 'none';
+      document.body.classList.remove('splash-active');
+      aviso = document.createElement('div');
+      aviso.className = 'fallo-arranque';
+      aviso.setAttribute('role', 'alert');
+      aviso.innerHTML = '<p>No se pudo cargar la aplicación. Revisa tu conexión y recarga la página.</p>' +
+        '<button type="button">Recargar</button>';
+      aviso.querySelector('button').addEventListener('click', function () { window.location.reload(); });
+      var destino = document.querySelector('main') || document.body;
+      destino.insertBefore(aviso, destino.firstChild);
+    }
+    var temporizador = window.setTimeout(function () {
+      if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', avisar);
+      else avisar();
+    }, Math.max(0, LIMITE_MS - (window.performance ? performance.now() : 0)));
+    window.cancelarRedDeArranque = function () {
+      cancelada = true;
+      window.clearTimeout(temporizador);
+      if(aviso && aviso.parentNode) aviso.parentNode.removeChild(aviso);
+      delete window.cancelarRedDeArranque;
+    };
+  }());
+</script>
 <link rel="stylesheet" href="css/variables.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/splash.css">

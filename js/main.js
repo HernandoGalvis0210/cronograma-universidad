@@ -5,6 +5,9 @@ import { paintThemeButton, iniciarInterfaz } from './ui.js';
 import { applySession, renderAuthArea } from './auth.js';
 import { fetchData } from './actividades.js';
 
+// La aplicación arrancó: se cancela la red de seguridad del head de index.html.
+if(window.cancelarRedDeArranque) window.cancelarRedDeArranque();
+
 // Splash institucional. Tiempos en ms: se cambian aquí.
 // Cuentan desde que el logo está decodificado; no dependen de "load" ni de Supabase.
 (function () {
