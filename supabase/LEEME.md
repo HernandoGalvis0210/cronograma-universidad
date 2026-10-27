@@ -135,7 +135,7 @@ El rol no cambia: sigue en `perfiles` asociado a la cuenta.
 
 1. Abre el cronograma **sin iniciar sesión** y crea una actividad llamada `PRUEBA ROLES`.
 2. Ábrela y sube un archivo cualquiera.
-3. Comprueba que **no aparecen** "🗑️ Eliminar Actividad" ni "Eliminar" en el archivo.
+3. Comprueba que **no aparecen** "Eliminar actividad" ni "Eliminar" en el archivo.
 
 ### Prueba B — Desde la consola del navegador (más precisa)
 
@@ -154,7 +154,7 @@ Usa los bloques **6.5** (como anónimo: debe devolver 0 filas) y **6.6** (como u
 
 ### Prueba D — Un revisor sí puede borrar
 
-1. Pulsa **🔐 Acceso revisores** en el encabezado.
+1. Pulsa **Acceso revisores** en el encabezado.
 2. En **Usuario** escribe `académico` (o `superior` / `administración`; da igual tildes y mayúsculas) y su contraseña.
 3. En el encabezado debe aparecer la etiqueta del rol y **Cerrar sesión**, y en las tarjetas los botones de eliminar.
 4. Elimina el archivo y luego la actividad `PRUEBA ROLES`. Recarga: ya no deben estar, y el archivo tampoco en **Storage → cronograma-archivos**.
@@ -263,7 +263,7 @@ En el **SQL Editor** (todos terminan en `rollback`, no cambian nada):
 
 En la **página**:
 
-1. **Sin iniciar sesión**: abre una tarjeta. No deben aparecer "Actualizar Estado", "✏️ Editar Actividad" ni los botones de eliminar. Sí puedes agregar una nota y **subir un archivo** (comprueba que la subida funciona: es la prueba de que el cambio de Storage no la afectó) y **abrirlo**.
+1. **Sin iniciar sesión**: abre una tarjeta. No deben aparecer "Actualizar Estado", "Editar actividad" ni los botones de eliminar. Sí puedes agregar una nota y **subir un archivo** (comprueba que la subida funciona: es la prueba de que el cambio de Storage no la afectó) y **abrirlo**.
 2. Crea una actividad: el formulario no muestra "Estado" y queda como **Pendiente**.
 3. Intenta subir un `.exe` o un archivo de más de 10 MB: la página lo rechaza con un mensaje.
 4. **F12 → Consola**, cambia `123` por un id real:
@@ -279,7 +279,7 @@ En la **página**:
    ```
 
    Esperado: `error` con `code: "42501"` y ninguna actividad nueva.
-5. **Inicia sesión como revisor**: aparecen el selector de estado y "✏️ Editar Actividad", y ambos funcionan.
+5. **Inicia sesión como revisor**: aparecen el selector de estado y "Editar actividad", y ambos funcionan.
 
 Si la subida sin sesión **falla** tras aplicar el script, revierte solo la sección 3 (bloque "3." de la reversión) y avísame.
 
