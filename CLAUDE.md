@@ -14,6 +14,7 @@ No hay build ni dependencias locales. `supabase-js` se carga desde jsDelivr con 
 ```
 index.html        HTML, precarga del logo y de los módulos, capa mínima del splash en línea
 assets/logo.png   logo del splash (precargado con rel=preload)
+assets/favicon/   favicon (.ico 16/32/48, PNG), apple-touch-icon, icon-192/512 y site.webmanifest; ?v=1 en las rutas del head (subirlo al cambiarlos). favicon.ico también en la raíz
 css/
   variables.css   paleta, tema claro (:root) y oscuro (body.dark-mode), radios, sombras, estados
   base.css        caja, body, header, contenedor, botones, campos y foco
