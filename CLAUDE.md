@@ -49,13 +49,14 @@ Campos usados por el código (inferidos; se lee con `select('*')`):
 Se ejecutan a mano en el SQL Editor, en orden (guía en `supabase/LEEME.md`). Si se vuelve a ejecutar `roles.sql`, hay que ejecutar `roles-2.sql` otra vez. Nunca usar la clave `service_role` en el repo.
 
 - `supabase/roles.sql`: tabla `perfiles (id → auth.users, rol)`, función `es_revisor()` y políticas: select/insert abiertos, update de actividades abierto (lo limita el trigger de `roles-2.sql`), delete solo `es_revisor()` en ambas tablas y en el bucket. FK `activity_id` con ON DELETE CASCADE (no borra archivos del bucket).
-- `supabase/roles-2.sql`: trigger BEFORE UPDATE `cronograma_actividades_solo_notas` (quien no es revisor solo cambia `notes`; si no, error `42501`; no afecta a `postgres` ni `service_role`). `cronograma_archivos` sin UPDATE (ni política ni privilegio) y `UNIQUE (path)`. SELECT de `storage.objects` del bucket solo para revisores. CHECK de longitud (caracteres): `title` 300, `date` 60, `location` 1000, `responsible` 500, `notes` 50 000, `cronograma_archivos.name` 255 (error `23514`). Trae consultas de verificación y reversión comentadas.
+- `supabase/roles-2.sql`: trigger BEFORE UPDATE `cronograma_actividades_solo_notas` (quien no es revisor solo cambia `notes`; si no, error `42501`; no afecta a `postgres` ni `service_role`). `cronograma_archivos` sin UPDATE (ni política ni privilegio) y `UNIQUE (path)`. SELECT de `storage.objects` del bucket solo para revisores. CHECK de longitud (caracteres): `title` 300, `date` 60, `location` 1000, `responsible` 500, `notes` 50 000, `cronograma_archivos.name` 255 (error `23514`). Política `actividades_insert` reemplazada: `with check (status = 'pending' or es_revisor())` (si no, `42501`); CHECK `status in ('pending','approved','done')`, no nulo. Trae consultas de verificación y reversión comentadas. `roles.sql` recrea `actividades_insert` abierta.
 
 Permisos vigentes:
 
 | Acción | Todos (sin sesión) | Revisores |
 |---|---|---|
-| Ver, crear actividades (quedan `pending`), subir y abrir archivos, agregar notas | ✅ | ✅ |
+| Ver, subir y abrir archivos, agregar notas | ✅ | ✅ |
+| Crear actividades | ✅ solo `pending` (RLS) | ✅ cualquier estado |
 | Borrar notas | ✅ (pendiente: mover notas a su propia tabla) | ✅ |
 | Editar título/fecha/sedes/responsable, cambiar estado | ❌ | ✅ |
 | Eliminar actividades y archivos | ❌ | ✅ |
@@ -93,7 +94,7 @@ En curso (rama `feature/roles`):
 8. Restricción de eliminación: botones solo si `canDelete()`; la RLS es la que decide.
 
 En curso (rama `feature/permisos-edicion`):
-9. Permisos de edición: `supabase/roles-2.sql` (hay que aplicarlo en el panel). En la página, el selector de estado, "✏️ Editar Actividad" y el campo Estado del formulario solo se renderizan si `canEdit()`; sin rol las actividades nuevas se crean `pending`. Enlaces `target="_blank"` con `rel="noopener noreferrer"`. Validación de subida y `maxlength` en los campos. Pendiente: borrar notas (mover las notas a su propia tabla) y forzar `pending` en el INSERT desde la base.
+9. Permisos de edición: `supabase/roles-2.sql` (hay que aplicarlo en el panel). En la página, el selector de estado, "✏️ Editar Actividad" y el campo Estado del formulario solo se renderizan si `canEdit()`; sin rol las actividades nuevas se crean `pending`. Enlaces `target="_blank"` con `rel="noopener noreferrer"`. Validación de subida y `maxlength` en los campos. Pendiente: borrar notas (mover las notas a su propia tabla).
 
 Patrones del cliente para escrituras:
 - `runWrite(query, mensaje)`: añade `.select('id')` y avisa si hubo error o si se afectaron 0 filas (la RLS rechaza UPDATE/DELETE sin dar error).
