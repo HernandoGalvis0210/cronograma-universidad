@@ -173,7 +173,6 @@ El script hace que `cronograma_archivos.activity_id` sea una clave foránea con 
 ## Pendiente
 
 - **Borrar notas** sigue abierto para todos. Agregar y borrar una nota son el mismo UPDATE del campo `notes`, así que la base no puede distinguirlos. Se blindará más adelante moviendo las notas a su propia tabla (una fila por nota, con INSERT abierto y DELETE solo para revisores).
-- **Crear con un estado distinto de "pendiente"**: la página solo deja elegir el estado a los revisores, pero la base aún no lo impide en el INSERT.
 
 ---
 
@@ -184,7 +183,7 @@ Requiere haber aplicado antes `roles.sql`. Al terminar, las reglas vigentes son:
 | Acción | Sin iniciar sesión | Revisor (`superior`, `academico`, `administracion`) |
 |---|---|---|
 | Ver actividades | ✅ | ✅ |
-| Crear actividades (quedan como "Pendiente") | ✅ | ✅ (elige el estado) |
+| Crear actividades | ✅ (solo como "Pendiente") | ✅ (con cualquier estado) |
 | Subir archivos | ✅ | ✅ |
 | Abrir archivos (URL pública) | ✅ | ✅ |
 | Agregar notas | ✅ | ✅ |
@@ -211,14 +210,16 @@ Requiere haber aplicado antes `roles.sql`. Al terminar, las reglas vigentes son:
    | `cronograma_archivos.name` | 255 | 62 |
 
    Si se supera, Supabase responde con `23514` y la página avisa de que el texto es demasiado largo. Para cambiar un límite, edita el número en `roles-2.sql` (y en `index.html`: `maxlength` de los campos, `MAX_NOTES_LENGTH`, `MAX_FILE_NAME_LENGTH`) y vuelve a ejecutarlo.
+5. **Estado al crear y estados válidos**: la política `actividades_insert` (que `roles.sql` creaba con `with check (true)`) se reemplaza por una que solo deja insertar con `status = 'pending'`, salvo a los revisores. Un INSERT con otro estado sin ser revisor da `42501` y la página muestra el aviso de permisos. Además, `CHECK` `cronograma_actividades_status_valido`: `status` solo puede ser `pending`, `approved` o `done` (nunca vacío); si no, `23514`.
 
 ## Paso F2.1 — Inspección (solo lectura)
 
-En **SQL Editor → New query** ejecuta por separado las consultas **0.1 a 0.4** de `roles-2.sql` (quitando los `--`):
+En **SQL Editor → New query** ejecuta por separado las consultas **0.1 a 0.5** de `roles-2.sql` (quitando los `--`):
 
 - **0.1**: longitud máxima actual de cada campo. Deben quedar muy por debajo de los límites.
 - **0.2** y **0.3**: deben devolver **0 filas**. Si 0.3 devuelve rutas repetidas, avísame antes de seguir: hay que decidir qué fila conservar.
 - **0.4**: guarda el resultado como respaldo de las políticas.
+- **0.5**: debe devolver **0 filas** (estados fuera de `pending`/`approved`/`done`). El 26/10/2026 solo había `pending` y `done`. Si devuelve filas, corrige su estado desde el Table Editor antes de seguir.
 
 ## Paso F2.2 — Ejecutar `roles-2.sql`
 
@@ -230,9 +231,10 @@ Errores posibles (en todos los casos no se aplicó nada):
 
 - **`Hay N ruta(s) (path) repetida(s)…`**: ver consulta 0.3.
 - **`check constraint "…_longitud" … is violated by some row`**: ver consulta 0.2.
+- **`check constraint "cronograma_actividades_status_valido" … is violated by some row`**: ver consulta 0.5.
 - **`must be owner of table objects`**: crea la política de Storage a mano en **Storage → Policies → cronograma-archivos** (SELECT, rol `authenticated`, condición `bucket_id = 'cronograma-archivos' and (select public.es_revisor())`, sustituyendo la de SELECT que había) y ejecuta el script sin la sección 3.
 
-> **Importante:** si algún día vuelves a ejecutar `roles.sql`, este script se deshace en parte (vuelven `archivos_update` y la lectura abierta del bucket). Ejecuta `roles-2.sql` otra vez después.
+> **Importante:** si algún día vuelves a ejecutar `roles.sql`, este script se deshace en parte (vuelven `archivos_update`, la lectura abierta del bucket y `actividades_insert` abierta, que deja crear con cualquier estado). Ejecuta `roles-2.sql` otra vez después.
 
 ## Paso F2.3 (recomendado) — Límite del bucket
 
@@ -248,12 +250,16 @@ La página ya rechaza archivos de más de 10 MB o de otros tipos, pero eso se pu
 
 En el **SQL Editor** (todos terminan en `rollback`, no cambian nada):
 
-- **5.1 a 5.3**: el trigger existe, `anon_update` y `auth_update` son `false`, y están las restricciones.
-- **5.5**: como anónimo, cambiar el título → **ERROR 42501** con el mensaje del trigger.
-- **5.6**: como anónimo, agregar una nota → **1 fila**.
-- **5.7**: como revisor, cambiar título y estado → **1 fila**.
-- **5.8**: como `postgres` → **1 fila**.
-- **5.9**: título de 301 caracteres → **ERROR 23514**.
+- **6.1 a 6.4**: el trigger existe, `anon_update` y `auth_update` son `false`, están las restricciones y la política de INSERT menciona `pending` y `es_revisor()`.
+- **6.5**: como anónimo, cambiar el título → **ERROR 42501** con el mensaje del trigger.
+- **6.6**: como anónimo, agregar una nota → **1 fila**.
+- **6.7**: como revisor, cambiar título y estado → **1 fila**.
+- **6.8**: como `postgres` → **1 fila**.
+- **6.9**: título de 301 caracteres → **ERROR 23514**.
+- **6.10**: como anónimo, crear con estado `approved` → **ERROR 42501** (`new row violates row-level security policy`).
+- **6.11**: como anónimo, crear con estado `pending` → **1 fila**.
+- **6.12**: como revisor, crear con estado `approved` → **1 fila**.
+- **6.13**: estado `otro` → **ERROR 23514**.
 
 En la **página**:
 
@@ -266,13 +272,19 @@ En la **página**:
    await supabaseClient.from('cronograma_actividades').update({ title: 'hackeado' }).eq('id', 123).select()
    ```
 
-   Esperado: `error` con `code: "42501"` y el título sin cambios.
+   Esperado: `error` con `code: "42501"` y el título sin cambios. Y para la creación:
+
+   ```js
+   await supabaseClient.from('cronograma_actividades').insert({ title: 'PRUEBA', date: '01/01/2026', responsible: 'Prueba', status: 'approved' }).select()
+   ```
+
+   Esperado: `error` con `code: "42501"` y ninguna actividad nueva.
 5. **Inicia sesión como revisor**: aparecen el selector de estado y "✏️ Editar Actividad", y ambos funcionan.
 
 Si la subida sin sesión **falla** tras aplicar el script, revierte solo la sección 3 (bloque "3." de la reversión) y avísame.
 
 ## Revertir `roles-2.sql`
 
-La sección **6** de `roles-2.sql` tiene el bloque de reversión completo: copia desde `-- begin;` hasta `-- commit;`, quita los `-- ` del inicio de cada línea y pulsa **Run**. Deja todo como lo dejó `roles.sql` (trigger eliminado, UPDATE de archivos y lectura del bucket abiertos de nuevo, sin `UNIQUE` ni límites). Se puede revertir solo una parte ejecutando únicamente su bloque (1, 2, 3 o 4) dentro de `begin; … commit;`.
+La sección **7** de `roles-2.sql` tiene el bloque de reversión completo: copia desde `-- begin;` hasta `-- commit;`, quita los `-- ` del inicio de cada línea y pulsa **Run**. Deja todo como lo dejó `roles.sql` (trigger eliminado; UPDATE de archivos, lectura del bucket e INSERT con cualquier estado abiertos de nuevo; sin `UNIQUE`, límites ni CHECK de estado). Se puede revertir solo una parte ejecutando únicamente su bloque (1, 2, 3, 4 o 5) dentro de `begin; … commit;`.
 
 La página sigue funcionando tras revertir: solo dejará de recibir los rechazos de la base (los controles de edición seguirán ocultos sin sesión).
