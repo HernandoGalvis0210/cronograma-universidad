@@ -1,7 +1,7 @@
 // Interfaz: iconos, tema, render de la línea de tiempo, filtros, modales y eventos.
 import { estado, statusText, UPLOAD_ACCEPT, PERMISSION_MSG } from './estado.js';
 import { canEdit, canDelete, closeLoginModal, submitLogin } from './auth.js';
-import { deleteActivity, changeStatus, activityDateValue } from './actividades.js';
+import { saveActivity, deleteActivity, changeStatus, activityDateValue } from './actividades.js';
 import { renderNotesLog, deleteNote, appendNote } from './notas.js';
 import { fileHTML, findFile, addFiles, downloadFile, removeFile } from './archivos.js';
 
@@ -210,6 +210,18 @@ export function iniciarInterfaz(){
   const id = Number(el.dataset.id);
   if(el.dataset.action === "change-status") changeStatus(id, el.value);
   else if(el.dataset.action === "add-files") addFiles(id, el);
+ });
+
+ // --- ACCIONES DEL ENCABEZADO, LA BARRA Y EL FORMULARIO (delegación: sin onclick en línea) ---
+ document.addEventListener("click", e => {
+  const el = e.target.closest("[data-action]");
+  if(!el || timelineBox.contains(el)) return;
+  switch(el.dataset.action){
+   case "toggle-theme": toggleTheme(); break;
+   case "new-activity": openActivityModal(); break;
+   case "close-activity-modal": closeActivityModal(); break;
+   case "save-activity": saveActivity(); break;
+  }
  });
  // ---------------------------------------------
 

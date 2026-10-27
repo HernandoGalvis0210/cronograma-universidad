@@ -1,9 +1,9 @@
 // Arranque: splash, tema guardado, sesión, realtime, eventos y primera carga.
 import { supabaseClient } from './config.js';
 import { estado } from './estado.js';
-import { paintThemeButton, toggleTheme, openActivityModal, closeActivityModal, iniciarInterfaz } from './ui.js';
+import { paintThemeButton, iniciarInterfaz } from './ui.js';
 import { applySession, renderAuthArea } from './auth.js';
-import { fetchData, saveActivity } from './actividades.js';
+import { fetchData } from './actividades.js';
 
 // Splash institucional. Tiempos en ms: se cambian aquí.
 // Cuentan desde que el logo está decodificado; no dependen de "load" ni de Supabase.
@@ -64,9 +64,6 @@ supabaseClient.channel('realtime_sync')
 // ------------------------------------
 
 iniciarInterfaz();
-
-// Puente temporal: los onclick en línea del HTML buscan estas funciones en window.
-Object.assign(window, { toggleTheme, openActivityModal, closeActivityModal, saveActivity });
 
 renderAuthArea();
 window.onload = () => {

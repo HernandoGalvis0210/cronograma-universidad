@@ -44,14 +44,14 @@ body.splash-active{overflow:hidden;}
     </div>
     <div class="header-actions">
       <div class="auth-area" id="authArea" aria-live="polite"></div>
-      <button type="button" id="themeToggle" class="theme-btn" onclick="toggleTheme()" title="Cambiar a tema oscuro" aria-label="Cambiar a tema oscuro"></button>
+      <button type="button" id="themeToggle" class="theme-btn" data-action="toggle-theme" title="Cambiar a tema oscuro" aria-label="Cambiar a tema oscuro"></button>
     </div>
   </div>
 </header>
 
 <main class="container">
   <div class="toolbar">
-    <button class="add" onclick="openActivityModal()">Nueva actividad</button>
+    <button class="add" data-action="new-activity">Nueva actividad</button>
     <button class="filter active" data-filter="all">Todas</button>
     <button class="filter" data-filter="pending">Pendientes</button>
     <button class="filter" data-filter="approved">Aprobadas</button>
@@ -93,8 +93,8 @@ body.splash-active{overflow:hidden;}
    </div>
   </div>
   <div class="modal-actions">
-   <button class="cancel" onclick="closeActivityModal()">Cancelar</button>
-   <button class="add" onclick="saveActivity()">Guardar actividad</button>
+   <button class="cancel" data-action="close-activity-modal">Cancelar</button>
+   <button class="add" data-action="save-activity">Guardar actividad</button>
   </div>
  </div>
 </div>
