@@ -84,21 +84,23 @@ Cumplidas:
 2. Sistema visual institucional (dorado, azul marino, carmesí; tema claro/oscuro).
 3. Tarjetas y línea de tiempo.
 4. Splash institucional.
-5. Responsive + actividades completadas (la vista "Todas" oculta las `done`; filtro "Completadas").
+5. Responsive + actividades completadas (filtro "Completadas"). La regla de que "Todas" ocultaba las `done` quedó reemplazada en la fase 10.
 
-En curso (rama `feature/roles`):
+Fusionadas en `main` (el SQL de 7 y 9 hay que aplicarlo a mano en el panel):
 6. Autenticación: modal "Acceso revisores" (`signInWithPassword`), sesión restaurada con `getSession` y `onAuthStateChange`. ✅ cliente.
    - Se entra con **Usuario**, no correo: `superior`, `académico` o `administración` (`normalizeUser()` ignora tildes, mayúsculas y espacios). `reviewerEmail()` lo convierte en `<usuario>@cronograma.local`; un usuario desconocido no llega a Supabase y recibe el mismo "Usuario o contraseña incorrectos.".
    - Cuentas en Supabase Auth: `superior@cronograma.local`, `academico@cronograma.local`, `administracion@cronograma.local`, creadas con "Auto Confirm User" (el dominio no recibe correo). Son cuentas por **cargo**: al cambiar la persona se cambia la contraseña y se cierran sus sesiones (pasos en `supabase/LEEME.md`).
    - Nunca escribir contraseñas ni claves (`service_role`) en archivos del repo.
 7. Roles y permisos: `supabase/roles.sql` (hay que aplicarlo en el panel) + rol leído de `perfiles` en cada cambio de sesión. ✅ cliente.
 8. Restricción de eliminación: botones solo si `canDelete()`; la RLS es la que decide.
+9. Permisos de edición: `supabase/roles-2.sql` (hay que aplicarlo en el panel). En la página, el selector de estado, "Editar actividad" y el campo Estado del formulario solo se renderizan si `canEdit()`; sin rol las actividades nuevas se crean `pending`. Enlaces `target="_blank"` con `rel="noopener noreferrer"`. Validación de subida y `maxlength` en los campos. Pendiente: borrar notas (mover las notas a su propia tabla).
 
-En curso (rama `feature/permisos-edicion`):
-9. Permisos de edición: `supabase/roles-2.sql` (hay que aplicarlo en el panel). En la página, el selector de estado, "✏️ Editar Actividad" y el campo Estado del formulario solo se renderizan si `canEdit()`; sin rol las actividades nuevas se crean `pending`. Enlaces `target="_blank"` con `rel="noopener noreferrer"`. Validación de subida y `maxlength` en los campos. Pendiente: borrar notas (mover las notas a su propia tabla).
+En curso (rama `ajuste/filtro-todas`):
+10. Filtro "Todas": muestra **todas** las actividades, también las completadas (reemplaza la decisión de la fase 5). Pendientes, Aprobadas y Completadas filtran solo su estado. El primer contador del resumen se llama "Todas" y es `activities.length` = Pendientes + Aprobadas + Completadas. Orden de la línea de tiempo: por fecha (`activityDateValue`), sin agrupar por estado.
 
 Patrones del cliente para escrituras:
 - `runWrite(query, mensaje)`: añade `.select('id')` y avisa si hubo error o si se afectaron 0 filas (la RLS rechaza UPDATE/DELETE sin dar error).
+- Tras crear, editar o eliminar una actividad con éxito se llama a `fetchData()` para que la vista cambie al instante sin depender de Realtime; `changeStatus` actualiza el estado local y vuelve a renderizar.
 - `removeFromBucket(paths)`: borra de Storage y comprueba en la URL pública lo que no se devolvió como borrado; siempre antes de borrar filas.
 - `errorMessage(error, mensaje)`: mensaje amable para errores de permisos (`42501` —también el del trigger—, 401/403, RLS) y para textos demasiado largos (`23514`).
 - El rol nunca se guarda en `localStorage`; `isReviewer()` / `canDelete()` / `canEdit()` solo deciden qué se muestra. Cada acción restringida también comprueba su función antes de llamar a Supabase.
