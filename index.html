@@ -147,6 +147,20 @@ body.splash-active{overflow:hidden;}
   </section>
 </main>
 
+<!-- Detalle del calendario: antes del formulario para que "Editar actividad" se abra por encima. -->
+<div class="modal" id="calDetalle" role="dialog" aria-modal="true" aria-labelledby="calDetalleTitulo">
+ <div class="modal-box cal-detalle-box">
+  <div class="cal-detalle-cabecera">
+   <div>
+    <h2 id="calDetalleTitulo"></h2>
+    <p id="calDetalleResumen" class="cal-detalle-resumen" hidden></p>
+   </div>
+   <button type="button" class="cancel" id="calDetalleCerrar" data-action="cal-cerrar-detalle">Cerrar</button>
+  </div>
+  <div id="calDetalleLista" class="cal-detalle-lista"></div>
+ </div>
+</div>
+
 <div class="modal" id="activityModal">
  <div class="modal-box">
   <h2 id="modalTitle">Nueva actividad</h2>

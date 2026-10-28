@@ -56,6 +56,14 @@
 .cal-sin-fecha[hidden]{display:none;}
 .cal-sin-fecha p{margin:0;}
 
+/* Detalle de un día o una actividad: reutiliza la tarjeta de la lista */
+.cal-detalle-box{width:min(920px,100%);}
+.cal-detalle-cabecera{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;}
+.cal-detalle-cabecera h2{margin:0;}
+.cal-detalle-resumen{margin:4px 0 0;color:var(--muted);font-size:.88rem;font-weight:600;}
+.cal-detalle-resumen[hidden]{display:none;}
+.cal-detalle-lista{display:grid;gap:16px;}
+
 @media(max-width:600px){
  .vista-selector{flex:1 1 100%;margin-left:0;}
  .toolbar .vista-selector button{flex:1 1 0;}
