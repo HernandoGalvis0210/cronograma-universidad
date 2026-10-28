@@ -69,6 +69,7 @@ body.splash-active{overflow:hidden;}
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/splash.css">
 <link rel="stylesheet" href="css/componentes.css">
+<link rel="stylesheet" href="css/calendario.css">
 <link rel="stylesheet" href="css/responsive.css">
 <!-- supabase-js fijado a una versión exacta (antes @2, que cambia sola). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
@@ -81,6 +82,7 @@ body.splash-active{overflow:hidden;}
 <link rel="modulepreload" href="js/actividades.js">
 <link rel="modulepreload" href="js/notas.js">
 <link rel="modulepreload" href="js/archivos.js">
+<link rel="modulepreload" href="js/calendario.js">
 <script type="module" src="js/main.js"></script>
 </head>
 <body class="splash-active">
@@ -107,6 +109,10 @@ body.splash-active{overflow:hidden;}
     <button class="filter" data-filter="pending">Pendientes</button>
     <button class="filter" data-filter="approved">Aprobadas</button>
     <button class="filter" data-filter="done">Completadas</button>
+    <div class="vista-selector" role="group" aria-label="Vista">
+      <button type="button" class="vista-btn" data-action="cambiar-vista" data-vista="lista" aria-pressed="true">Lista</button>
+      <button type="button" class="vista-btn" data-action="cambiar-vista" data-vista="calendario" aria-pressed="false">Calendario</button>
+    </div>
   </div>
 
   <div class="stats">
@@ -121,7 +127,39 @@ body.splash-active{overflow:hidden;}
   </div>
 
   <section id="timeline" class="timeline"></section>
+  <section id="calendario" class="calendario" aria-label="Calendario de actividades" hidden>
+    <div class="cal-cabecera">
+      <div class="cal-nav">
+        <button type="button" class="cal-flecha" data-action="cal-anterior" data-icono="anterior" aria-label="Mes anterior" title="Mes anterior"></button>
+        <h2 id="calTitulo" class="cal-titulo"></h2>
+        <button type="button" class="cal-flecha" data-action="cal-siguiente" data-icono="siguiente" aria-label="Mes siguiente" title="Mes siguiente"></button>
+      </div>
+      <button type="button" class="cal-hoy-btn" data-action="cal-hoy">Hoy</button>
+    </div>
+    <p id="calAnuncio" class="sr-only" aria-live="polite"></p>
+    <div id="calGrid" class="cal-grid" role="grid" aria-labelledby="calTitulo"></div>
+    <ul class="cal-leyenda" aria-label="Estados">
+      <li><span class="cal-muestra cal-estado-pending" aria-hidden="true"></span>Pendiente</li>
+      <li><span class="cal-muestra cal-estado-approved" aria-hidden="true"></span>Aprobado</li>
+      <li><span class="cal-muestra cal-estado-done" aria-hidden="true"></span>Completada</li>
+    </ul>
+    <div id="calSinFecha" class="cal-sin-fecha" hidden></div>
+  </section>
 </main>
+
+<!-- Detalle del calendario: antes del formulario para que "Editar actividad" se abra por encima. -->
+<div class="modal" id="calDetalle" role="dialog" aria-modal="true" aria-labelledby="calDetalleTitulo">
+ <div class="modal-box cal-detalle-box">
+  <div class="cal-detalle-cabecera">
+   <div>
+    <h2 id="calDetalleTitulo"></h2>
+    <p id="calDetalleResumen" class="cal-detalle-resumen" hidden></p>
+   </div>
+   <button type="button" class="cancel" id="calDetalleCerrar" data-action="cal-cerrar-detalle">Cerrar</button>
+  </div>
+  <div id="calDetalleLista" class="cal-detalle-lista"></div>
+ </div>
+</div>
 
 <div class="modal" id="activityModal">
  <div class="modal-box">

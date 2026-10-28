@@ -4,6 +4,7 @@ import { canEdit, canDelete, closeLoginModal, submitLogin } from './auth.js';
 import { saveActivity, deleteActivity, changeStatus, activityDateValue } from './actividades.js';
 import { renderNotesLog, deleteNote, appendNote } from './notas.js';
 import { fileHTML, findFile, addFiles, downloadFile, removeFile } from './archivos.js';
+import { renderCalendario, cambiarVista, iniciarCalendario, mesAnterior, mesSiguiente, irAHoy, abrirDetalle, cerrarDetalle } from './calendario.js';
 
 // --- ICONOS (SVG de línea, heredan el color del texto) ---
 // Decorativos: siempre aria-hidden; el texto o el aria-label del control
@@ -13,7 +14,11 @@ const ICONOS = {
   persona: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   archivo: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
   sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
-  luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+  luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  lista: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  anterior: '<path d="m15 18-6-6 6-6"/>',
+  siguiente: '<path d="m9 18 6-6-6-6"/>'
 };
 export function icon(nombre){
   return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONOS[nombre]}</svg>`;
@@ -99,22 +104,41 @@ export function escapeHtml(s){
  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
+// "Todas" muestra todas las actividades, completadas incluidas; cada otra pestaña, solo su estado.
+// Lo usan la lista y el calendario.
+export function actividadesFiltradas(){
+ return estado.activities.filter(a=>estado.currentFilter==="all" || a.status===estado.currentFilter);
+}
+
 export function render(){
  const box=document.getElementById("timeline"); box.innerHTML="";
- // "Todas" muestra todas las actividades, completadas incluidas; cada otra pestaña, solo su estado.
- let shown=estado.activities.filter(a=>estado.currentFilter==="all" || a.status===estado.currentFilter);
+ // En el calendario la línea de tiempo queda vacía: así los id de las tarjetas no se repiten en su detalle.
+ const enCalendario = estado.vista === "calendario";
+ box.hidden = enCalendario;
+ document.getElementById("calendario").hidden = !enCalendario;
+ if(enCalendario){ renderCalendario(); updateStats(); return; }
+ let shown=actividadesFiltradas();
  shown.sort((a,b)=>activityDateValue(a)-activityDateValue(b));
  shown.forEach(a=>{
-  const id = Number(a.id);
-  const fList = estado.filesData[a.id] || [];
-  const isOpen = estado.openCards.includes(id) ? 'open' : '';
-  const editable = canEdit();
-
   const el=document.createElement("article");
   el.className="activity";
   el.innerHTML=`
    <div class="dot"></div>
-   <div class="card ${isOpen}" id="card-${id}">
+   ${tarjetaHTML(a)}
+  `;
+  box.appendChild(el);
+ });
+ updateStats();
+}
+
+// Tarjeta de una actividad: cabecera, detalle (estado, notas, archivos) y pie con las acciones
+// que permite el rol. La usan la línea de tiempo y el detalle del calendario.
+export function tarjetaHTML(a, abierta=false){
+  const id = Number(a.id);
+  const fList = estado.filesData[a.id] || [];
+  const isOpen = abierta || estado.openCards.includes(id) ? 'open' : '';
+  const editable = canEdit();
+  return `<div class="card ${isOpen}" id="card-${id}">
 
     <div class="card-head" data-action="toggle-card" data-id="${id}" title="Haz clic para ver o cerrar detalles">
      <div class="card-head-content">
@@ -165,11 +189,7 @@ export function render(){
       ${editable ? `<button class="toggle" data-action="edit-activity" data-id="${id}">Editar actividad</button>` : ''}
       ${canDelete() ? `<button class="delete" data-action="delete-activity" data-id="${id}">Eliminar actividad</button>` : ''}
     </div>` : ''}
-   </div>
-  `;
-  box.appendChild(el);
- });
- updateStats();
+   </div>`;
 }
 
 export function updateStats(){
@@ -189,39 +209,27 @@ export function iniciarInterfaz(){
  });
 
  // --- ACCIONES DE LAS TARJETAS (delegación: sin datos interpolados en onclick) ---
- const timelineBox = document.getElementById("timeline");
- timelineBox.addEventListener("click", e => {
-  const el = e.target.closest("[data-action]");
-  if(!el || !timelineBox.contains(el)) return;
-  const id = Number(el.dataset.id);
-  const file = el.dataset.fileId ? findFile(Number(el.dataset.fileId)) : null;
-  switch(el.dataset.action){
-   case "toggle-card": toggleCard(id); break;
-   case "edit-activity": openActivityModal(id); break;
-   case "delete-activity": deleteActivity(id); break;
-   case "append-note": appendNote(id, el); break;
-   case "delete-note": deleteNote(id, Number(el.dataset.index)); break;
-   case "open-file": if(file) downloadFile(file.path); break;
-   case "remove-file": if(file) removeFile(file.id, file.path); break;
-  }
- });
- timelineBox.addEventListener("change", e => {
-  const el = e.target.closest("[data-action]");
-  if(!el || !timelineBox.contains(el)) return;
-  const id = Number(el.dataset.id);
-  if(el.dataset.action === "change-status") changeStatus(id, el.value);
-  else if(el.dataset.action === "add-files") addFiles(id, el);
- });
+ // Las tarjetas están en la línea de tiempo y en el detalle del calendario.
+ const cajasDeTarjetas = [document.getElementById("timeline"), document.getElementById("calDetalleLista")];
+ cajasDeTarjetas.forEach(delegarTarjetas);
 
- // --- ACCIONES DEL ENCABEZADO, LA BARRA Y EL FORMULARIO (delegación: sin onclick en línea) ---
+ // --- ACCIONES DEL ENCABEZADO, LA BARRA, EL CALENDARIO Y EL FORMULARIO (delegación: sin onclick en línea) ---
  document.addEventListener("click", e => {
   const el = e.target.closest("[data-action]");
-  if(!el || timelineBox.contains(el)) return;
+  if(!el || cajasDeTarjetas.some(caja => caja.contains(el))) return;
   switch(el.dataset.action){
    case "toggle-theme": toggleTheme(); break;
    case "new-activity": openActivityModal(); break;
    case "close-activity-modal": closeActivityModal(); break;
    case "save-activity": saveActivity(); break;
+   case "cambiar-vista": cambiarVista(el.dataset.vista); break;
+   case "cal-anterior": mesAnterior(); break;
+   case "cal-siguiente": mesSiguiente(); break;
+   case "cal-hoy": irAHoy(); break;
+   case "cal-ver-lista": cambiarVista("lista"); break;
+   case "cal-dia": abrirDetalle({ tipo: "dia", fecha: Number(el.dataset.fecha) }, el); break;
+   case "cal-actividad": abrirDetalle({ tipo: "actividad", id: Number(el.dataset.id) }, el); break;
+   case "cal-cerrar-detalle": cerrarDetalle(); break;
   }
  });
  // ---------------------------------------------
@@ -244,4 +252,32 @@ export function iniciarInterfaz(){
   else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
  });
  // ---------------------------------------------
+
+ iniciarCalendario();
+}
+
+// Acciones de las tarjetas dentro de una caja (línea de tiempo o detalle del calendario).
+function delegarTarjetas(caja){
+ caja.addEventListener("click", e => {
+  const el = e.target.closest("[data-action]");
+  if(!el || !caja.contains(el)) return;
+  const id = Number(el.dataset.id);
+  const file = el.dataset.fileId ? findFile(Number(el.dataset.fileId)) : null;
+  switch(el.dataset.action){
+   case "toggle-card": toggleCard(id); break;
+   case "edit-activity": openActivityModal(id); break;
+   case "delete-activity": deleteActivity(id); break;
+   case "append-note": appendNote(id, el); break;
+   case "delete-note": deleteNote(id, Number(el.dataset.index)); break;
+   case "open-file": if(file) downloadFile(file.path); break;
+   case "remove-file": if(file) removeFile(file.id, file.path); break;
+  }
+ });
+ caja.addEventListener("change", e => {
+  const el = e.target.closest("[data-action]");
+  if(!el || !caja.contains(el)) return;
+  const id = Number(el.dataset.id);
+  if(el.dataset.action === "change-status") changeStatus(id, el.value);
+  else if(el.dataset.action === "add-files") addFiles(id, el);
+ });
 }

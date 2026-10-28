@@ -1,0 +1,92 @@
+/* Vista de calendario: selector Lista | Calendario, cabecera del mes, cuadrícula, etiquetas
+   de actividades, leyenda y detalle del día. Sus anchos propios van al final de este archivo. */
+.vista-selector{display:inline-flex;gap:3px;margin-left:auto;padding:3px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);}
+.toolbar .vista-selector button{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;color:var(--muted);background:transparent;border-radius:7px;}
+.toolbar .vista-selector button:hover{color:var(--secondary);background:var(--surface-muted);}
+.toolbar .vista-selector button[aria-pressed="true"]{color:var(--on-secondary);background:var(--secondary);}
+.vista-btn .icon{width:16px;height:16px;}
+.calendario[hidden],.timeline[hidden]{display:none;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+
+/* Cabecera: mes y año, flechas y Hoy */
+.calendario{padding:18px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);}
+.cal-cabecera{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.cal-nav{display:flex;align-items:center;gap:8px;min-width:0;}
+.cal-titulo{min-width:9.5em;margin:0;color:var(--text);font-size:1.35rem;font-weight:800;letter-spacing:-.025em;line-height:1.2;text-align:center;}
+.cal-flecha{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;padding:0;color:var(--secondary);background:var(--card);border:1px solid var(--border);border-radius:50%;box-shadow:var(--shadow-sm);}
+.cal-flecha:hover{border-color:var(--border-strong);background:var(--surface-muted);}
+.cal-flecha .icon{width:20px;height:20px;}
+.cal-hoy-btn{min-height:44px;color:var(--secondary);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
+.cal-hoy-btn:hover{border-color:var(--border-strong);background:var(--surface-muted);}
+
+/* Cuadrícula: una fila por semana, siete columnas (lunes a domingo) */
+.cal-grid{display:grid;gap:6px;}
+.cal-grid.cal-cambio{animation:cal-entrada .25s ease-out;}
+@keyframes cal-entrada{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+.cal-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:30px repeat(3,22px) 20px;column-gap:6px;row-gap:3px;}
+.cal-semana.cal-encabezado{grid-template-rows:auto;}
+.cal-dia-semana{padding:2px 8px 4px;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
+.cal-celda{display:flex;grid-row:1/-1;min-width:0;}
+.cal-dia{display:flex;flex:1;flex-direction:column;align-items:flex-start;min-width:0;padding:5px 7px;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);font-weight:700;text-align:left;transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease;}
+.cal-dia:hover{border-color:var(--border-strong);box-shadow:var(--shadow-md);}
+.cal-finde{background:color-mix(in srgb,var(--secondary) 5%,var(--card));}
+.cal-dia.cal-fuera{background:color-mix(in srgb,var(--surface-muted) 70%,var(--card));box-shadow:none;}
+.cal-fuera .cal-num{color:var(--muted);opacity:.7;}
+.cal-num{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 4px;font-size:.84rem;line-height:1;border-radius:999px;}
+.cal-dia.cal-hoy{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary),var(--shadow-sm);}
+.cal-hoy .cal-num{color:var(--on-primary);background:var(--primary);font-weight:800;}
+.cal-dia-semana.cal-finde{background:none;}
+
+/* Actividades: etiquetas por estado; un rango cruza los días y se parte por semanas */
+.cal-estado-pending{--cal-fondo:var(--cal-pending-bg);--cal-texto:var(--cal-pending-text);--cal-borde:var(--pending);}
+.cal-estado-approved{--cal-fondo:var(--cal-approved-bg);--cal-texto:var(--cal-approved-text);--cal-borde:var(--cal-approved-bg);}
+.cal-estado-done{--cal-fondo:var(--cal-done-bg);--cal-texto:var(--cal-done-text);--cal-borde:var(--cal-done-bg);}
+.cal-etiqueta{position:relative;z-index:1;align-self:center;min-width:0;height:22px;margin:0 6px;padding:0 8px;overflow:hidden;color:var(--cal-texto);background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:6px;box-shadow:var(--shadow-sm);font-size:.72rem;font-weight:700;line-height:20px;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;transition:filter .2s ease,box-shadow .2s ease;}
+.cal-etiqueta:hover{filter:brightness(1.06) saturate(1.05);box-shadow:var(--shadow-md);}
+.cal-etiqueta.sigue-antes{margin-left:0;border-left-width:0;border-top-left-radius:0;border-bottom-left-radius:0;}
+.cal-etiqueta.sigue-despues{margin-right:0;border-right-width:0;border-top-right-radius:0;border-bottom-right-radius:0;}
+.cal-mas{position:relative;z-index:1;align-self:center;grid-row:5;min-width:0;margin:0 8px;overflow:hidden;color:var(--secondary);font-size:.74rem;font-weight:800;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
+.cal-mas:hover{text-decoration:underline;}
+
+/* Leyenda (el color no es la única señal) y aviso de actividades sin fecha válida */
+.cal-leyenda{display:flex;flex-wrap:wrap;gap:8px 18px;margin:16px 0 0;padding:0;list-style:none;color:var(--muted);font-size:.82rem;font-weight:700;}
+.cal-leyenda li{display:inline-flex;align-items:center;gap:7px;}
+.cal-muestra{display:inline-block;width:14px;height:14px;background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:4px;}
+.cal-sin-fecha{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 16px;margin-top:16px;padding:12px 14px;color:var(--text);background:var(--surface-muted);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:var(--radius-sm);font-size:.88rem;}
+.cal-sin-fecha[hidden]{display:none;}
+.cal-sin-fecha p{margin:0;}
+
+/* Detalle de un día o una actividad: reutiliza la tarjeta de la lista */
+.cal-detalle-box{width:min(920px,100%);}
+.cal-detalle-cabecera{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px;}
+.cal-detalle-cabecera h2{margin:0;}
+.cal-detalle-resumen{margin:4px 0 0;color:var(--muted);font-size:.88rem;font-weight:600;}
+.cal-detalle-resumen[hidden]{display:none;}
+.cal-detalle-lista{display:grid;gap:16px;}
+
+/* Foco con teclado: azul marino (azul claro en oscuro), visible sobre las celdas y sobre el dorado de hoy */
+.vista-btn:focus-visible,.cal-flecha:focus-visible,.cal-hoy-btn:focus-visible,.cal-dia:focus-visible{outline:3px solid var(--secondary);outline-offset:2px;}
+
+/* Puntos por estado: solo en pantallas angostas */
+.cal-puntos{display:none;flex-wrap:wrap;justify-content:center;gap:3px;}
+.cal-punto{width:8px;height:8px;background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:50%;}
+
+@media(max-width:600px){
+ .vista-selector{flex:1 1 100%;margin-left:0;}
+ .toolbar .vista-selector button{flex:1 1 0;}
+ .calendario{padding:12px;}
+ .cal-cabecera{margin-bottom:12px;}
+ .cal-titulo{min-width:0;font-size:1.12rem;}
+ .cal-grid{gap:4px;}
+ .cal-semana{grid-template-rows:auto;column-gap:4px;}
+ .cal-celda{grid-row:1;}
+ .cal-etiqueta,.cal-mas{display:none;}
+ .cal-dia{align-items:center;gap:5px;min-height:52px;padding:5px 2px;}
+ .cal-dia-semana{padding:2px 0 4px;font-size:.64rem;letter-spacing:.03em;text-align:center;}
+ .cal-puntos{display:flex;}
+ .cal-leyenda{gap:6px 14px;font-size:.78rem;}
+}
+
+@media(prefers-reduced-motion:reduce){
+ .calendario *,.cal-detalle-box,.cal-detalle-box *{transition:none!important;animation:none!important;}
+}
