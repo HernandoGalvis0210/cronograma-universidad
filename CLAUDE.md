@@ -20,6 +20,7 @@ css/
   base.css        caja, body, header, contenedor, botones, campos y foco
   splash.css      animaciones de entrada y salida del splash
   componentes.css filtros, resumen, línea de tiempo, tarjetas, notas, archivos, modales, acceso
+  calendario.css  selector Lista | Calendario, mes, etiquetas, puntos, leyenda, detalle (con sus propios 600 px y reduced-motion)
   responsive.css  media queries 1024/768/600/480/390/360 px (siempre la última)
 js/
   config.js       cliente de Supabase, isPermissionError, errorMessage, runWrite
@@ -28,7 +29,8 @@ js/
   actividades.js  fetchData, saveActivity, deleteActivity, changeStatus, activityDateValue
   archivos.js     validación y subida, fileHTML, abrir y borrar, removeFromBucket
   notas.js        renderNotesLog, appendNote, deleteNote
-  ui.js           icon, tema, render, filtros, modal de actividad, iniciarInterfaz (eventos)
+  ui.js           icon, tema, render, tarjetaHTML, actividadesFiltradas, modal de actividad, iniciarInterfaz (eventos)
+  calendario.js   vista (localStorage 'vista'), cuadrícula del mes, rangos por semanas, detalle del día, teclado
   main.js         arranque: splash, tema guardado, onAuthStateChange, realtime, primera carga
 supabase/         SQL de roles y RLS + guía (se aplica a mano en el panel)
 ```
@@ -39,7 +41,7 @@ supabase/         SQL de roles y RLS + guía (se aplica a mano en el panel)
 - Splash:
   - Tiempos en las constantes `TIEMPOS` (entrada 600 / permanencia 1200 / salida 700 ms) y `TIEMPOS_REDUCIDOS` (500 / 700 / 300 ms, solo fundido) al inicio de `js/main.js`. Cuentan desde que el logo se decodifica (`logo.decode()`, máx. `ESPERA_MAX_LOGO`), nunca desde `load` ni Supabase.
   - Con `prefers-reduced-motion` el splash **no se quita**: se muestra sin escalado. Al terminar se elimina del DOM; `splash-respaldo` (CSS) lo oculta a los 8 s si el script fallara. Es `aria-hidden`.
-- HTML: header, toolbar de filtros, stats, `#timeline`, modales `#activityModal` y `#loginModal`.
+- HTML: header, toolbar de filtros (con el selector `.vista-selector`), stats, `#timeline`, `#calendario`, modales `#calDetalle` (antes que el formulario, para que "Editar actividad" quede encima), `#activityModal` y `#loginModal`.
 - Módulos: el estado que antes eran variables globales (`activities`, `filesData`, `currentFilter`, `editingId`, `openCards`, `currentSession`, `currentRole`…) vive en `estado` (`estado.activities`, etc.). Las importaciones circulares entre módulos son intencionadas y seguras: ningún módulo usa otro al evaluarse, solo dentro de funciones; los efectos de arranque están en `main.js`.
 - `window.supabaseClient` y `window.activities` (solo lectura) existen a propósito para las pruebas de consola de `supabase/LEEME.md`.
 
@@ -95,11 +97,11 @@ Canal `realtime_sync` escucha `*` en ambas tablas y vuelve a llamar a `fetchData
 
 - Todo en **español**: textos de UI, comentarios, mensajes de commit y nombres nuevos cuando tenga sentido (los existentes mezclan inglés: `activities`, `render`, etc.; respetarlos).
 - **Sin compilación**: CSS en `css/` y JS en módulos ES de `js/` según el mapa de Estructura; nada de bundlers, frameworks ni dependencias npm. Un archivo nuevo de JS se importa desde el módulo que lo usa y se añade su `<link rel="modulepreload">` en `index.html`.
-- Usar las **variables CSS existentes** (`--primary`, `--secondary`, `--brand-crimson`, `--card`, `--border`, `--radius-*`, `--shadow-*`, `--pending/approved/done(-bg)`, etc.) en lugar de colores fijos, para que funcionen en tema claro y oscuro (`body.dark-mode`).
+- Usar las **variables CSS existentes** (`--primary`, `--secondary`, `--brand-crimson`, `--card`, `--border`, `--radius-*`, `--shadow-*`, `--pending/approved/done(-bg)`, `--cal-<estado>-bg/-text` para las etiquetas del calendario, etc.) en lugar de colores fijos, para que funcionen en tema claro y oscuro (`body.dark-mode`).
 - Identidad: dorado (`--brand-gold`), azul marino (`--brand-navy`), carmesí (`--brand-crimson`) para acciones destructivas.
-- Sin emojis en la interfaz (textos, `title`/`aria-label`, mensajes): texto sobrio. Si un icono aporta, usar `icon('sede'|'persona'|'archivo'|'sol'|'luna')` (SVG de línea de `ICONOS`, `currentColor`, `aria-hidden`); un botón solo con icono lleva `aria-label` y `title`.
+- Sin emojis en la interfaz (textos, `title`/`aria-label`, mensajes): texto sobrio. Si un icono aporta, usar `icon('sede'|'persona'|'archivo'|'sol'|'luna'|'lista'|'calendario'|'anterior'|'siguiente')` (SVG de línea de `ICONOS`, `currentColor`, `aria-hidden`); un botón solo con icono lleva `aria-label` y `title`.
 - Estilo de código: CSS compacto en una línea por regla; JS sin framework, `async/await` con `supabaseClient`. **No hay `onclick`/`onchange` en línea** (con módulos no ven las funciones): todo control lleva `data-action` y lo despacha un listener delegado (ver abajo).
-- Al insertar datos en HTML usar siempre `escapeHtml()`. Los controles llevan `data-action` (+ `data-id` numérico en las tarjetas) y los despachan dos listeners delegados de `iniciarInterfaz()` en `js/ui.js`: el de `#timeline` (tarjetas) y el de `document` (tema, Nueva actividad, Cancelar/Guardar del formulario). Para nuevas acciones, añadir un `case` ahí en lugar de interpolar datos en atributos.
+- Al insertar datos en HTML usar siempre `escapeHtml()`. Los controles llevan `data-action` (+ `data-id` numérico en las tarjetas) y los despachan los listeners delegados de `iniciarInterfaz()` en `js/ui.js`: `delegarTarjetas()` en cada caja con tarjetas (`#timeline` y `#calDetalleLista`) y el de `document` (tema, Nueva actividad, Cancelar/Guardar del formulario, vista y acciones `cal-*` del calendario). Para nuevas acciones, añadir un `case` ahí en lugar de interpolar datos en atributos.
 
 ## Fases
 
@@ -120,8 +122,18 @@ Fusionadas en `main` (el SQL de 7 y 9 hay que aplicarlo a mano en el panel):
 9. Permisos de edición: `supabase/roles-2.sql` (hay que aplicarlo en el panel). En la página, el selector de estado, "Editar actividad" y el campo Estado del formulario solo se renderizan si `canEdit()`; sin rol las actividades nuevas se crean `pending`. Enlaces `target="_blank"` con `rel="noopener noreferrer"`. Validación de subida y `maxlength` en los campos. Pendiente: borrar notas (mover las notas a su propia tabla).
 10. Filtro "Todas": muestra **todas** las actividades, también las completadas (reemplaza la decisión de la fase 5). Pendientes, Aprobadas y Completadas filtran solo su estado. El primer contador del resumen se llama "Todas" y es `activities.length` = Pendientes + Aprobadas + Completadas. Orden de la línea de tiempo: por fecha (`activityDateValue`), sin agrupar por estado.
 
-En curso (rama `refactor/estructura`, sin cambios de comportamiento ni de aspecto):
 11. Reorganización en carpetas (ver Estructura): logo a `assets/`, CSS a `css/`, JS a módulos ES en `js/`, `onclick` en línea sustituidos por `data-action` con delegación, supabase-js fijado a 2.118.0 y `.gitignore`.
+
+En curso (rama `feature/vista-calendario`, sin cambios en Supabase):
+12. Vista de calendario mensual (ver abajo).
+
+## Vista de calendario
+
+- Selector "Lista | Calendario" en la toolbar (`aria-pressed`); `estado.vista` se guarda en `localStorage` (`'vista'`, en try/catch); por defecto, Lista. Con Calendario, `render()` vacía `#timeline` (así los `id` de las tarjetas no se repiten en el detalle) y llama a `renderCalendario()`. Mismos datos y mismo filtro (`actividadesFiltradas()`), sin consultas nuevas; se actualiza con cada `render()` (realtime, crear, editar, estado, eliminar).
+- Fechas: `partesFecha()` (en `actividades.js`, la misma regex que ordena la lista) + validación del día real; un rango es `dd/mm/aaaa - dd/mm/aaaa` (si el fin no vale, solo el inicio). Fechas como `{ y, m, d }` construidas con números (nunca `new Date("texto")`); claves `aaaammdd` en `data-fecha`. Meses y días en arreglos fijos (sin Intl). Semana de lunes a domingo; "hoy" es la fecha local.
+- Ancho: cada tramo de actividad (un rango se parte por semanas) es una etiqueta en un carril; `MAX_CARRILES` = 3 y el resto va en "+N más". Hasta 600 px: puntos por estado en cada día. Las etiquetas y "+N más" son `aria-hidden` (atajos para el puntero); el acceso accesible es el botón de cada día (`aria-label` "27 de octubre de 2026, 2 actividades") en una cuadrícula `role="grid"` con tabindex itinerante y flechas/Inicio/Fin/RePág/AvPág.
+- Detalle (`#calDetalle`): reutiliza `tarjetaHTML(a, true)` y la delegación de las tarjetas, así que acciones y permisos son los de la lista. Se repinta en cada `render()` conservando el foco y lo escrito en las notas; Esc, clic fuera y foco atrapado; al cerrar, el foco vuelve al día.
+- Actividades sin fecha válida: aviso debajo del calendario con acceso a la Lista.
 
 Patrones del cliente para escrituras:
 - `runWrite(query, mensaje)`: añade `.select('id')` y avisa si hubo error o si se afectaron 0 filas (la RLS rechaza UPDATE/DELETE sin dar error).
