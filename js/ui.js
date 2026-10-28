@@ -104,6 +104,12 @@ export function escapeHtml(s){
  return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
 }
 
+// "Todas" muestra todas las actividades, completadas incluidas; cada otra pestaña, solo su estado.
+// Lo usan la lista y el calendario.
+export function actividadesFiltradas(){
+ return estado.activities.filter(a=>estado.currentFilter==="all" || a.status===estado.currentFilter);
+}
+
 export function render(){
  const box=document.getElementById("timeline"); box.innerHTML="";
  // En el calendario la línea de tiempo queda vacía: así los id de las tarjetas no se repiten en su detalle.
@@ -111,8 +117,7 @@ export function render(){
  box.hidden = enCalendario;
  document.getElementById("calendario").hidden = !enCalendario;
  if(enCalendario){ renderCalendario(); updateStats(); return; }
- // "Todas" muestra todas las actividades, completadas incluidas; cada otra pestaña, solo su estado.
- let shown=estado.activities.filter(a=>estado.currentFilter==="all" || a.status===estado.currentFilter);
+ let shown=actividadesFiltradas();
  shown.sort((a,b)=>activityDateValue(a)-activityDateValue(b));
  shown.forEach(a=>{
   const id = Number(a.id);
@@ -236,6 +241,7 @@ export function iniciarInterfaz(){
    case "cal-anterior": mesAnterior(); break;
    case "cal-siguiente": mesSiguiente(); break;
    case "cal-hoy": irAHoy(); break;
+   case "cal-ver-lista": cambiarVista("lista"); break;
   }
  });
  // ---------------------------------------------

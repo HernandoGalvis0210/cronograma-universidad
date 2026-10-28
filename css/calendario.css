@@ -37,6 +37,25 @@
 .cal-hoy .cal-num{color:var(--on-primary);background:var(--primary);font-weight:800;}
 .cal-dia-semana.cal-finde{background:none;}
 
+/* Actividades: etiquetas por estado; un rango cruza los días y se parte por semanas */
+.cal-estado-pending{--cal-fondo:var(--cal-pending-bg);--cal-texto:var(--cal-pending-text);--cal-borde:var(--pending);}
+.cal-estado-approved{--cal-fondo:var(--cal-approved-bg);--cal-texto:var(--cal-approved-text);--cal-borde:var(--cal-approved-bg);}
+.cal-estado-done{--cal-fondo:var(--cal-done-bg);--cal-texto:var(--cal-done-text);--cal-borde:var(--cal-done-bg);}
+.cal-etiqueta{position:relative;z-index:1;align-self:center;min-width:0;height:22px;margin:0 6px;padding:0 8px;overflow:hidden;color:var(--cal-texto);background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:6px;box-shadow:var(--shadow-sm);font-size:.72rem;font-weight:700;line-height:20px;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;transition:filter .2s ease,box-shadow .2s ease;}
+.cal-etiqueta:hover{filter:brightness(1.06) saturate(1.05);box-shadow:var(--shadow-md);}
+.cal-etiqueta.sigue-antes{margin-left:0;border-left-width:0;border-top-left-radius:0;border-bottom-left-radius:0;}
+.cal-etiqueta.sigue-despues{margin-right:0;border-right-width:0;border-top-right-radius:0;border-bottom-right-radius:0;}
+.cal-mas{position:relative;z-index:1;align-self:center;grid-row:5;min-width:0;margin:0 8px;overflow:hidden;color:var(--secondary);font-size:.74rem;font-weight:800;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
+.cal-mas:hover{text-decoration:underline;}
+
+/* Leyenda (el color no es la única señal) y aviso de actividades sin fecha válida */
+.cal-leyenda{display:flex;flex-wrap:wrap;gap:8px 18px;margin:16px 0 0;padding:0;list-style:none;color:var(--muted);font-size:.82rem;font-weight:700;}
+.cal-leyenda li{display:inline-flex;align-items:center;gap:7px;}
+.cal-muestra{display:inline-block;width:14px;height:14px;background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:4px;}
+.cal-sin-fecha{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 16px;margin-top:16px;padding:12px 14px;color:var(--text);background:var(--surface-muted);border:1px solid var(--border);border-left:4px solid var(--primary);border-radius:var(--radius-sm);font-size:.88rem;}
+.cal-sin-fecha[hidden]{display:none;}
+.cal-sin-fecha p{margin:0;}
+
 @media(max-width:600px){
  .vista-selector{flex:1 1 100%;margin-left:0;}
  .toolbar .vista-selector button{flex:1 1 0;}

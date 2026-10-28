@@ -32,6 +32,13 @@
   --approved-bg:#edf1f9;
   --done:#087a5b;
   --done-bg:#eafaf4;
+  /* Calendario: fondo y texto de las etiquetas por estado (contraste AA o más). */
+  --cal-pending-bg:#f7c600;
+  --cal-pending-text:#111d42;
+  --cal-approved-bg:#263f73;
+  --cal-approved-text:#ffffff;
+  --cal-done-bg:#087a5b;
+  --cal-done-text:#ffffff;
 }
 body.dark-mode{
   --brand-gold:#ffd64d;
@@ -62,4 +69,10 @@ body.dark-mode{
   --approved-bg:#26365b;
   --done:#61d6ae;
   --done-bg:#12372e;
+  --cal-pending-bg:#ffd64d;
+  --cal-pending-text:#111d42;
+  --cal-approved-bg:#8eaeeb;
+  --cal-approved-text:#10182f;
+  --cal-done-bg:#61d6ae;
+  --cal-done-text:#0d1322;
 }

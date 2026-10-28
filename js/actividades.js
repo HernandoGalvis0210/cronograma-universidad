@@ -69,13 +69,20 @@ export async function deleteActivity(id){
  if(await runWrite(supabaseClient.from('cronograma_actividades').delete().eq('id', id), "No se pudo eliminar la actividad.")) await fetchData();
 }
 
+// Día, mes y año de la primera fecha "dd/mm/aaaa" del texto (sin año, el actual), o null.
+// No valida el día: lo hace el calendario. La usan el orden de la lista y el calendario.
+export function partesFecha(texto){
+ const m = String(texto).match(/(\d{1,2})\D+(\d{1,2})(?:\D+(\d{2,4}))?/);
+ if(!m) return null;
+ let y = m[3] ? Number(m[3]) : new Date().getFullYear();
+ if(y < 100) y += 2000;
+ return { y, m: Number(m[2]), d: Number(m[1]) };
+}
+
 export function activityDateValue(a){
- const m = String(a.date).match(/(\d{1,2})\D+(\d{1,2})(?:\D+(\d{2,4}))?/);
- if(!m) return Number.MAX_SAFE_INTEGER;
- const day = Number(m[1]), month = Number(m[2]);
- let year = m[3] ? Number(m[3]) : new Date().getFullYear();
- if(year < 100) year += 2000;
- return new Date(year, month-1, day).getTime();
+ const f = partesFecha(a.date);
+ if(!f) return Number.MAX_SAFE_INTEGER;
+ return new Date(f.y, f.m-1, f.d).getTime();
 }
 
 export async function changeStatus(id,status){

@@ -138,6 +138,12 @@ body.splash-active{overflow:hidden;}
     </div>
     <p id="calAnuncio" class="sr-only" aria-live="polite"></p>
     <div id="calGrid" class="cal-grid" role="grid" aria-labelledby="calTitulo"></div>
+    <ul class="cal-leyenda" aria-label="Estados">
+      <li><span class="cal-muestra cal-estado-pending" aria-hidden="true"></span>Pendiente</li>
+      <li><span class="cal-muestra cal-estado-approved" aria-hidden="true"></span>Aprobado</li>
+      <li><span class="cal-muestra cal-estado-done" aria-hidden="true"></span>Completada</li>
+    </ul>
+    <div id="calSinFecha" class="cal-sin-fecha" hidden></div>
   </section>
 </main>
 
