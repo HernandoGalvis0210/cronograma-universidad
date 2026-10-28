@@ -1,0 +1,13 @@
+/* Vista de calendario: selector Lista | Calendario, cabecera del mes, cuadrícula, etiquetas
+   de actividades, leyenda y detalle del día. Sus anchos propios van al final de este archivo. */
+.vista-selector{display:inline-flex;gap:3px;margin-left:auto;padding:3px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:var(--shadow-sm);}
+.toolbar .vista-selector button{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:8px 12px;color:var(--muted);background:transparent;border-radius:7px;}
+.toolbar .vista-selector button:hover{color:var(--secondary);background:var(--surface-muted);}
+.toolbar .vista-selector button[aria-pressed="true"]{color:var(--on-secondary);background:var(--secondary);}
+.vista-btn .icon{width:16px;height:16px;}
+.calendario[hidden],.timeline[hidden]{display:none;}
+
+@media(max-width:600px){
+ .vista-selector{flex:1 1 100%;margin-left:0;}
+ .toolbar .vista-selector button{flex:1 1 0;}
+}

@@ -37,6 +37,11 @@ export const statusText={pending:"Pendiente", approved:"Aprobado", done:"Complet
 export const roleText={superior:"Superior", academico:"Académico", administracion:"Administración"};
 // ------------------------------------
 
+// --- VISTAS ---
+// "lista" es la línea de tiempo; "calendario", el mes. La elección se recuerda en localStorage.
+export const VISTAS = ["lista", "calendario"];
+// ------------------------------------
+
 // --- ESTADO COMPARTIDO ---
 // Un solo objeto para que todos los módulos lean y cambien los mismos datos.
 // El rol nunca se guarda en el navegador: se vuelve a leer de "perfiles".
@@ -49,7 +54,12 @@ export const estado = {
   currentSession: null,
   currentRole: null,
   authVersion: 0,
-  loginReturnFocus: null
+  loginReturnFocus: null,
+  vista: "lista",
+  calMes: null,        // mes que muestra el calendario: { y, m }
+  calFoco: null,       // día que recibe el foco con el teclado: { y, m, d }
+  calDetalle: null,    // detalle abierto: { tipo: "dia", fecha } o { tipo: "actividad", id }
+  calRetornoFoco: null // a dónde vuelve el foco al cerrar el detalle
 };
 
 // "activities" sigue disponible en la consola del navegador (lo usan las

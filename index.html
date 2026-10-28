@@ -69,6 +69,7 @@ body.splash-active{overflow:hidden;}
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/splash.css">
 <link rel="stylesheet" href="css/componentes.css">
+<link rel="stylesheet" href="css/calendario.css">
 <link rel="stylesheet" href="css/responsive.css">
 <!-- supabase-js fijado a una versión exacta (antes @2, que cambia sola). -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
@@ -81,6 +82,7 @@ body.splash-active{overflow:hidden;}
 <link rel="modulepreload" href="js/actividades.js">
 <link rel="modulepreload" href="js/notas.js">
 <link rel="modulepreload" href="js/archivos.js">
+<link rel="modulepreload" href="js/calendario.js">
 <script type="module" src="js/main.js"></script>
 </head>
 <body class="splash-active">
@@ -107,6 +109,10 @@ body.splash-active{overflow:hidden;}
     <button class="filter" data-filter="pending">Pendientes</button>
     <button class="filter" data-filter="approved">Aprobadas</button>
     <button class="filter" data-filter="done">Completadas</button>
+    <div class="vista-selector" role="group" aria-label="Vista">
+      <button type="button" class="vista-btn" data-action="cambiar-vista" data-vista="lista" aria-pressed="true">Lista</button>
+      <button type="button" class="vista-btn" data-action="cambiar-vista" data-vista="calendario" aria-pressed="false">Calendario</button>
+    </div>
   </div>
 
   <div class="stats">
@@ -121,6 +127,7 @@ body.splash-active{overflow:hidden;}
   </div>
 
   <section id="timeline" class="timeline"></section>
+  <section id="calendario" class="calendario" aria-label="Calendario de actividades" hidden></section>
 </main>
 
 <div class="modal" id="activityModal">

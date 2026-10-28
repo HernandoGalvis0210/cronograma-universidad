@@ -4,6 +4,7 @@ import { canEdit, canDelete, closeLoginModal, submitLogin } from './auth.js';
 import { saveActivity, deleteActivity, changeStatus, activityDateValue } from './actividades.js';
 import { renderNotesLog, deleteNote, appendNote } from './notas.js';
 import { fileHTML, findFile, addFiles, downloadFile, removeFile } from './archivos.js';
+import { renderCalendario, cambiarVista, iniciarCalendario } from './calendario.js';
 
 // --- ICONOS (SVG de línea, heredan el color del texto) ---
 // Decorativos: siempre aria-hidden; el texto o el aria-label del control
@@ -13,7 +14,11 @@ const ICONOS = {
   persona: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   archivo: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>',
   sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
-  luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>'
+  luna: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  lista: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  anterior: '<path d="m15 18-6-6 6-6"/>',
+  siguiente: '<path d="m9 18 6-6-6-6"/>'
 };
 export function icon(nombre){
   return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${ICONOS[nombre]}</svg>`;
@@ -101,6 +106,11 @@ export function escapeHtml(s){
 
 export function render(){
  const box=document.getElementById("timeline"); box.innerHTML="";
+ // En el calendario la línea de tiempo queda vacía: así los id de las tarjetas no se repiten en su detalle.
+ const enCalendario = estado.vista === "calendario";
+ box.hidden = enCalendario;
+ document.getElementById("calendario").hidden = !enCalendario;
+ if(enCalendario){ renderCalendario(); updateStats(); return; }
  // "Todas" muestra todas las actividades, completadas incluidas; cada otra pestaña, solo su estado.
  let shown=estado.activities.filter(a=>estado.currentFilter==="all" || a.status===estado.currentFilter);
  shown.sort((a,b)=>activityDateValue(a)-activityDateValue(b));
@@ -222,6 +232,7 @@ export function iniciarInterfaz(){
    case "new-activity": openActivityModal(); break;
    case "close-activity-modal": closeActivityModal(); break;
    case "save-activity": saveActivity(); break;
+   case "cambiar-vista": cambiarVista(el.dataset.vista); break;
   }
  });
  // ---------------------------------------------
@@ -244,4 +255,6 @@ export function iniciarInterfaz(){
   else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
  });
  // ---------------------------------------------
+
+ iniciarCalendario();
 }
