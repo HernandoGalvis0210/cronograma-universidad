@@ -46,7 +46,9 @@ if(window.cancelarRedDeArranque) window.cancelarRedDeArranque();
 }());
 
 // --- TEMA GUARDADO ---
-if(localStorage.getItem('theme') === 'dark') {
+let temaGuardado = null;
+try { temaGuardado = localStorage.getItem('theme'); } catch(e) { /* sin almacenamiento: tema claro */ }
+if(temaGuardado === 'dark') {
   document.body.classList.add('dark-mode');
 }
 paintThemeButton();

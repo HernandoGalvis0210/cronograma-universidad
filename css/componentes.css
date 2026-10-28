@@ -2,6 +2,7 @@
    botones de acción, modales y acceso de revisores. */
 .theme-btn{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:46px;height:46px;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:50%;font-size:20px;cursor:pointer;box-shadow:var(--shadow-sm);}
 .theme-btn:hover{background:rgba(255,255,255,.24);box-shadow:0 6px 16px rgba(0,0,0,.15);}
+.theme-btn:focus-visible{outline:3px solid var(--brand-gold);outline-offset:3px;}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:28px 0 24px;}
 .filter{color:var(--muted);background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow-sm);}
 .filter:hover{color:var(--secondary);border-color:var(--border-strong);}
