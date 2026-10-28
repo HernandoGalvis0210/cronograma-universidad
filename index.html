@@ -127,7 +127,18 @@ body.splash-active{overflow:hidden;}
   </div>
 
   <section id="timeline" class="timeline"></section>
-  <section id="calendario" class="calendario" aria-label="Calendario de actividades" hidden></section>
+  <section id="calendario" class="calendario" aria-label="Calendario de actividades" hidden>
+    <div class="cal-cabecera">
+      <div class="cal-nav">
+        <button type="button" class="cal-flecha" data-action="cal-anterior" data-icono="anterior" aria-label="Mes anterior" title="Mes anterior"></button>
+        <h2 id="calTitulo" class="cal-titulo"></h2>
+        <button type="button" class="cal-flecha" data-action="cal-siguiente" data-icono="siguiente" aria-label="Mes siguiente" title="Mes siguiente"></button>
+      </div>
+      <button type="button" class="cal-hoy-btn" data-action="cal-hoy">Hoy</button>
+    </div>
+    <p id="calAnuncio" class="sr-only" aria-live="polite"></p>
+    <div id="calGrid" class="cal-grid" role="grid" aria-labelledby="calTitulo"></div>
+  </section>
 </main>
 
 <div class="modal" id="activityModal">

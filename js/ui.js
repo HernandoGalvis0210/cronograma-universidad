@@ -4,7 +4,7 @@ import { canEdit, canDelete, closeLoginModal, submitLogin } from './auth.js';
 import { saveActivity, deleteActivity, changeStatus, activityDateValue } from './actividades.js';
 import { renderNotesLog, deleteNote, appendNote } from './notas.js';
 import { fileHTML, findFile, addFiles, downloadFile, removeFile } from './archivos.js';
-import { renderCalendario, cambiarVista, iniciarCalendario } from './calendario.js';
+import { renderCalendario, cambiarVista, iniciarCalendario, mesAnterior, mesSiguiente, irAHoy } from './calendario.js';
 
 // --- ICONOS (SVG de línea, heredan el color del texto) ---
 // Decorativos: siempre aria-hidden; el texto o el aria-label del control
@@ -233,6 +233,9 @@ export function iniciarInterfaz(){
    case "close-activity-modal": closeActivityModal(); break;
    case "save-activity": saveActivity(); break;
    case "cambiar-vista": cambiarVista(el.dataset.vista); break;
+   case "cal-anterior": mesAnterior(); break;
+   case "cal-siguiente": mesSiguiente(); break;
+   case "cal-hoy": irAHoy(); break;
   }
  });
  // ---------------------------------------------
