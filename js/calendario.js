@@ -94,7 +94,7 @@ export function renderCalendario(){
 
   const aviso = document.getElementById("calSinFecha");
   aviso.hidden = !sinFecha.length;
-  aviso.innerHTML = sinFecha.length ? `<p><b>${sinFecha.length === 1 ? "1 actividad sin fecha válida" : `${sinFecha.length} actividades sin fecha válida`}</b>: no aparecen en el calendario.</p>
+  aviso.innerHTML = sinFecha.length ? `<p>${sinFecha.length === 1 ? "<b>1 actividad sin fecha válida</b>: no aparece" : `<b>${sinFecha.length} actividades sin fecha válida</b>: no aparecen`} en el calendario.</p>
    <button type="button" class="cancel" data-action="cal-ver-lista">Verlas en la vista Lista</button>` : "";
 
   renderDetalle(); // si está abierto, refleja los cambios (realtime, estado, edición, eliminación)
