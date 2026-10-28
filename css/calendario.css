@@ -64,7 +64,29 @@
 .cal-detalle-resumen[hidden]{display:none;}
 .cal-detalle-lista{display:grid;gap:16px;}
 
+/* Foco con teclado: azul marino (azul claro en oscuro), visible sobre las celdas y sobre el dorado de hoy */
+.vista-btn:focus-visible,.cal-flecha:focus-visible,.cal-hoy-btn:focus-visible,.cal-dia:focus-visible{outline:3px solid var(--secondary);outline-offset:2px;}
+
+/* Puntos por estado: solo en pantallas angostas */
+.cal-puntos{display:none;flex-wrap:wrap;justify-content:center;gap:3px;}
+.cal-punto{width:8px;height:8px;background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:50%;}
+
 @media(max-width:600px){
  .vista-selector{flex:1 1 100%;margin-left:0;}
  .toolbar .vista-selector button{flex:1 1 0;}
+ .calendario{padding:12px;}
+ .cal-cabecera{margin-bottom:12px;}
+ .cal-titulo{min-width:0;font-size:1.12rem;}
+ .cal-grid{gap:4px;}
+ .cal-semana{grid-template-rows:auto;column-gap:4px;}
+ .cal-celda{grid-row:1;}
+ .cal-etiqueta,.cal-mas{display:none;}
+ .cal-dia{align-items:center;gap:5px;min-height:52px;padding:5px 2px;}
+ .cal-dia-semana{padding:2px 0 4px;font-size:.64rem;letter-spacing:.03em;text-align:center;}
+ .cal-puntos{display:flex;}
+ .cal-leyenda{gap:6px 14px;font-size:.78rem;}
+}
+
+@media(prefers-reduced-motion:reduce){
+ .calendario *,.cal-detalle-box,.cal-detalle-box *{transition:none!important;animation:none!important;}
 }

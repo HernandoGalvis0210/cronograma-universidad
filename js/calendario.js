@@ -123,11 +123,14 @@ function semanaHTML(ini, mes, kHoy, kFoco, conFecha){
   const delDia = i => tramos.filter(t => t.c1 <= i && i <= t.c2);
 
   const celdas = dias.map((f, i) => {
-    const k = claves[i], esHoy = k === kHoy, n = delDia(i).length;
+    const k = claves[i], esHoy = k === kHoy, delD = delDia(i), n = delD.length;
     const clases = ["cal-dia", f.m !== mes && "cal-fuera", i >= 5 && "cal-finde", esHoy && "cal-hoy"].filter(Boolean).join(" ");
+    // En pantallas angostas: un punto por cada estado presente ese día.
+    const puntos = ORDEN_ESTADOS.filter(s => delD.some(t => t.v.a.status === s)).map(s => `<span class="cal-punto cal-estado-${s}"></span>`).join("");
     return `<div class="cal-celda" role="gridcell" style="grid-column:${i + 1}">
      <button type="button" class="${clases}" data-action="cal-dia" data-fecha="${k}" tabindex="${k === kFoco ? 0 : -1}" aria-label="${fechaLarga(f)}, ${textoCuenta(n)}"${esHoy ? ' aria-current="date"' : ''}>
       <span class="cal-num" aria-hidden="true">${f.d}</span>
+      ${puntos ? `<span class="cal-puntos" aria-hidden="true">${puntos}</span>` : ''}
      </button>
     </div>`;
   }).join("");
@@ -160,6 +163,32 @@ function mostrarMes(y, m, foco = null){
 export function mesAnterior(){ mostrarMes(estado.calMes.y, estado.calMes.m - 1); }
 export function mesSiguiente(){ mostrarMes(estado.calMes.y, estado.calMes.m + 1); }
 export function irAHoy(){ const h = hoy(); mostrarMes(h.y, h.m, h); }
+
+// Mismo día en otro mes (o el último, si no existe: 31 de enero → 28 o 29 de febrero).
+function mismoDiaOtroMes(f, n){
+  const p = fecha(f.y, f.m + n, 1);
+  return { ...p, d: Math.min(f.d, diasDelMes(p.y, p.m)) };
+}
+
+// Teclado en la cuadrícula: flechas (día y semana), Inicio/Fin (semana) y RePág/AvPág (mes).
+// Si el día de destino es de otro mes, se muestra ese mes.
+function teclaEnCuadricula(e){
+  const btn = e.target.closest(".cal-dia");
+  if(!btn) return;
+  const f = deClave(Number(btn.dataset.fecha));
+  const destinos = {
+    ArrowLeft: () => sumarDias(f, -1), ArrowRight: () => sumarDias(f, 1),
+    ArrowUp: () => sumarDias(f, -7), ArrowDown: () => sumarDias(f, 7),
+    Home: () => sumarDias(f, -diaSemana(f)), End: () => sumarDias(f, 6 - diaSemana(f)),
+    PageUp: () => mismoDiaOtroMes(f, -1), PageDown: () => mismoDiaOtroMes(f, 1)
+  };
+  if(!destinos[e.key]) return;
+  e.preventDefault();
+  const dest = destinos[e.key]();
+  if(dest.y !== estado.calMes.y || dest.m !== estado.calMes.m) mostrarMes(dest.y, dest.m, dest);
+  const b = marcarFoco(dest);
+  if(b) b.focus();
+}
 // ------------------------------------
 
 // --- DETALLE DE UN DÍA O DE UNA ACTIVIDAD ---
@@ -241,6 +270,7 @@ function marcarFoco(f){
 
 // Se llama una vez al arrancar, desde iniciarInterfaz().
 export function iniciarCalendario(){
+  document.getElementById("calGrid").addEventListener("keydown", teclaEnCuadricula);
   // Detalle: cierre al pulsar fuera, Esc y foco atrapado (salvo si encima está el formulario).
   const modal = document.getElementById("calDetalle");
   modal.addEventListener("click", e => { if(e.target === modal) cerrarDetalle(); });
