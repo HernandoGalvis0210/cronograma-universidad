@@ -1,7 +1,7 @@
 // Vista de calendario: selector Lista | Calendario y mes con las actividades.
 import { estado, VISTAS } from './estado.js';
 import { icon, escapeHtml, render, actividadesFiltradas, tarjetaHTML } from './ui.js';
-import { partesFecha } from './actividades.js';
+import { partesFecha, diasEntreFechas, parseLocationEntries } from './actividades.js';
 
 // --- NOMBRES Y FECHAS ---
 // Arreglos fijos en español (sin Intl). Las fechas son { y, m, d } y se construyen con
@@ -24,15 +24,84 @@ function textoCuenta(n){ return n === 0 ? "sin actividades" : n === 1 ? "1 activ
 // ------------------------------------
 
 // --- FECHAS DE LAS ACTIVIDADES ---
-// "dd/mm/aaaa" o "dd/mm/aaaa - dd/mm/aaaa". Devuelve { ini, fin } en aaaammdd, o null si el
-// inicio no es una fecha real. Si el fin falta, no es válido o es anterior, ocupa solo el inicio.
+// "dd/mm/aaaa" o "dd/mm/aaaa - dd/mm/aaaa". Analiza además si location asigna días
+// específicos por sede dentro del rango para pintar solo los días con actividad real.
+function normalizarTexto(s){
+  return String(s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function rangoDeFechas(a){
   const [t1, t2] = String(a.date ?? "").split(/\s+-\s+/);
   const inicio = partesFecha(t1);
   if(!inicio || !fechaValida(inicio)) return null;
   const fin = t2 ? partesFecha(t2) : null;
-  const ini = clave(inicio), kFin = fin && fechaValida(fin) ? clave(fin) : ini;
-  return { ini, fin: Math.max(ini, kFin) };
+  const finReal = fin && fechaValida(fin) && clave(fin) >= clave(inicio) ? fin : inicio;
+  const todosLosDias = diasEntreFechas(inicio, finReal);
+  const entries = parseLocationEntries(a.location);
+
+  const sedesPorDia = new Map();
+  let tieneAlgunDiaEspecifico = false;
+
+  if(todosLosDias.length > 1 && entries.length > 0){
+    const sedesTodosLosDias = [];
+    for(const { name, detail } of entries){
+      const normDetail = normalizarTexto(detail);
+      if(!normDetail || normDetail.includes("todos")){
+        sedesTodosLosDias.push(name);
+        continue;
+      }
+      const diaMatch = todosLosDias.find(d => normalizarTexto(d.label) === normDetail);
+      if(diaMatch){
+        tieneAlgunDiaEspecifico = true;
+        if(!sedesPorDia.has(diaMatch.clave)) sedesPorDia.set(diaMatch.clave, []);
+        sedesPorDia.get(diaMatch.clave).push(name);
+      } else {
+        sedesTodosLosDias.push(name);
+      }
+    }
+    if(sedesTodosLosDias.length > 0){
+      for(const d of todosLosDias){
+        const prev = sedesPorDia.get(d.clave) || [];
+        sedesPorDia.set(d.clave, [...sedesTodosLosDias, ...prev]);
+      }
+    }
+  }
+
+  const nombresTodasSedes = entries.map(e => e.name);
+  if(sedesPorDia.size === 0){
+    for(const d of todosLosDias){
+      sedesPorDia.set(d.clave, nombresTodasSedes);
+    }
+  }
+
+  // Agrupar siempre los días activos consecutivos en un mismo tramo continuo,
+  // guardando qué sede(s) corresponden a cada día individual dentro del tramo.
+  const tramos = [];
+  for(const d of todosLosDias){
+    if(!sedesPorDia.has(d.clave)) continue;
+    const sedesDia = sedesPorDia.get(d.clave);
+    const sedesTexto = sedesDia.join(", ");
+    const ult = tramos[tramos.length - 1];
+    const sigDeUlt = ult ? clave(sumarDias(deClave(ult.fin), 1)) : null;
+    if(ult && d.clave === sigDeUlt){
+      ult.fin = d.clave;
+      ult.porDia.set(d.clave, sedesTexto);
+      for(const s of sedesDia){
+        if(!ult.sedesUnicas.includes(s)) ult.sedesUnicas.push(s);
+      }
+    } else {
+      tramos.push({
+        a,
+        ini: d.clave,
+        fin: d.clave,
+        porDia: new Map([[d.clave, sedesTexto]]),
+        sedesUnicas: [...sedesDia],
+        especifico: tieneAlgunDiaEspecifico
+      });
+    }
+  }
+
+  return { ini: tramos[0].ini, fin: tramos[tramos.length - 1].fin, sedesPorDia, tramos };
 }
 
 // Actividades del filtro activo: con fecha (ordenadas por inicio y, a igual inicio, la más larga
@@ -48,7 +117,7 @@ function actividadesDelCalendario(){
 }
 
 function actividadesDelDia(k){
-  return actividadesDelCalendario().conFecha.filter(v => v.ini <= k && k <= v.fin).map(v => v.a);
+  return actividadesDelCalendario().conFecha.filter(v => v.sedesPorDia.has(k)).map(v => v.a);
 }
 // ------------------------------------
 
@@ -109,10 +178,20 @@ const ORDEN_ESTADOS = ["pending", "approved", "done"];
 function semanaHTML(ini, mes, kHoy, kFoco, conFecha){
   const dias = Array.from({ length: 7 }, (_, i) => sumarDias(ini, i));
   const claves = dias.map(clave);
-  const tramos = conFecha.filter(v => v.ini <= claves[6] && v.fin >= claves[0]).map(v => ({
-    v, c1: v.ini < claves[0] ? 0 : claves.indexOf(v.ini), c2: v.fin > claves[6] ? 6 : claves.indexOf(v.fin),
-    sigueAntes: v.ini < claves[0], sigueDespues: v.fin > claves[6]
-  }));
+  const tramos = [];
+  for(const v of conFecha){
+    for(const seg of v.tramos){
+      if(seg.ini <= claves[6] && seg.fin >= claves[0]){
+        tramos.push({
+          v: seg,
+          c1: seg.ini < claves[0] ? 0 : claves.indexOf(seg.ini),
+          c2: seg.fin > claves[6] ? 6 : claves.indexOf(seg.fin),
+          sigueAntes: seg.ini < claves[0],
+          sigueDespues: seg.fin > claves[6]
+        });
+      }
+    }
+  }
   // Carriles: cada tramo ocupa el primero libre desde su día de inicio.
   const finCarril = [];
   for(const t of tramos){
@@ -136,10 +215,30 @@ function semanaHTML(ini, mes, kHoy, kFoco, conFecha){
   }).join("");
 
   // Las etiquetas repiten lo que anuncia el botón del día: son atajos para el puntero (aria-hidden).
+  // Caso 1 (día aislado): badge individual "Título · Sede".
+  // Caso 2 (días consecutivos): barra continua con el título arriba y la sede de cada día debajo.
   const etiquetas = tramos.filter(t => t.carril < MAX_CARRILES).map(t => {
     const a = t.v.a, estadoA = ORDEN_ESTADOS.includes(a.status) ? a.status : "pending";
-    const clases = ["cal-etiqueta", `cal-estado-${estadoA}`, t.sigueAntes && "sigue-antes", t.sigueDespues && "sigue-despues"].filter(Boolean).join(" ");
-    return `<div class="${clases}" style="grid-column:${t.c1 + 1}/${t.c2 + 2};grid-row:${t.carril + 2}" data-action="cal-actividad" data-id="${Number(a.id)}" data-fecha="${claves[t.c1]}" title="${escapeHtml(a.title)}" aria-hidden="true">${escapeHtml(a.title)}</div>`;
+    const numCols = t.c2 - t.c1 + 1;
+    const esConsecutivo = numCols > 1 || t.v.fin > t.v.ini;
+    const clases = ["cal-etiqueta", `cal-estado-${estadoA}`, esConsecutivo && "cal-etiqueta-continua", t.sigueAntes && "sigue-antes", t.sigueDespues && "sigue-despues"].filter(Boolean).join(" ");
+
+    if(!esConsecutivo){
+      const sedeDia = t.v.porDia.get(claves[t.c1]) || "";
+      const textoVisible = sedeDia ? `${a.title} · ${sedeDia}` : a.title;
+      const tooltip = sedeDia ? `${a.title} — Sede(s): ${sedeDia}` : a.title;
+      return `<div class="${clases}" style="grid-column:${t.c1 + 1}/${t.c2 + 2};grid-row:${t.carril + 2}" data-action="cal-actividad" data-id="${Number(a.id)}" data-fecha="${claves[t.c1]}" title="${escapeHtml(tooltip)}" aria-hidden="true">${escapeHtml(textoVisible)}</div>`;
+    }
+
+    const sedesColsHTML = [];
+    const detalleTooltip = [];
+    for(let col = t.c1; col <= t.c2; col++){
+      const sedeDia = t.v.porDia.get(claves[col]) || "";
+      sedesColsHTML.push(`<span class="cal-etiqueta-sede-dia">${escapeHtml(sedeDia || "—")}</span>`);
+      if(sedeDia) detalleTooltip.push(`${dias[col].d}: ${sedeDia}`);
+    }
+    const tooltip = detalleTooltip.length ? `${a.title} — ${detalleTooltip.join(" | ")}` : a.title;
+    return `<div class="${clases}" style="grid-column:${t.c1 + 1}/${t.c2 + 2};grid-row:${t.carril + 2};--cal-cols:${numCols}" data-action="cal-actividad" data-id="${Number(a.id)}" data-fecha="${claves[t.c1]}" title="${escapeHtml(tooltip)}" aria-hidden="true"><div class="cal-etiqueta-titulo">${escapeHtml(a.title)}</div><div class="cal-etiqueta-sedes">${sedesColsHTML.join("")}</div></div>`;
   }).join("");
   const mas = dias.map((f, i) => {
     const ocultos = delDia(i).filter(t => t.carril >= MAX_CARRILES).length;

@@ -1,8 +1,8 @@
 // Interfaz: iconos, tema, render de la línea de tiempo, filtros, modales y eventos.
-import { estado, statusText, UPLOAD_ACCEPT, PERMISSION_MSG } from './estado.js';
-import { canEdit, canDelete, closeLoginModal, submitLogin } from './auth.js';
-import { saveActivity, deleteActivity, changeStatus, activityDateValue } from './actividades.js';
-import { renderNotesLog, deleteNote, appendNote } from './notas.js';
+import { estado, statusText, UPLOAD_ACCEPT, PERMISSION_MSG, SEDES_FIJAS, VALOR_TODOS_LOS_DIAS } from './estado.js';
+import { canEdit, canDelete, isAdmin, closeLoginModal, submitLogin } from './auth.js';
+import { saveActivity, deleteActivity, changeStatus, activityDateValue, diasDeInputModal, parseLocationEntries } from './actividades.js';
+import { renderNotesLog, deleteNote, appendNote, canManageNotes } from './notas.js';
 import { fileHTML, findFile, addFiles, downloadFile, removeFile } from './archivos.js';
 import { renderCalendario, cambiarVista, iniciarCalendario, mesAnterior, mesSiguiente, irAHoy, abrirDetalle, cerrarDetalle } from './calendario.js';
 
@@ -48,6 +48,121 @@ export function toggleTheme() {
 // demás se crean como pendientes.
 export function syncStatusField(){
  document.getElementById("fStatusField").hidden = !canEdit();
+ syncLocationPermissions();
+}
+
+function normalizarSede(valor){
+ return String(valor || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+export function poblarSelectFechasSede(selectEl, diasRango, valorDeseado = ""){
+ if(!selectEl) return;
+ if(diasRango.length === 0){
+   selectEl.innerHTML = `<option value="">Selecciona primero la fecha de inicio</option>`;
+   selectEl.disabled = true;
+   return;
+ }
+ if(diasRango.length === 1){
+   selectEl.innerHTML = `<option value="${escapeHtml(diasRango[0].label)}">${escapeHtml(diasRango[0].label)} (único día)</option>`;
+   selectEl.disabled = true;
+   return;
+ }
+ selectEl.disabled = false;
+ selectEl.innerHTML = `<option value="${VALOR_TODOS_LOS_DIAS}">Todos los días del rango</option>`
+   + diasRango.map(d => `<option value="${escapeHtml(d.label)}">${escapeHtml(d.label)}</option>`).join("");
+ const normDeseado = normalizarSede(valorDeseado);
+ const encontrado = normDeseado && normDeseado !== normalizarSede(VALOR_TODOS_LOS_DIAS)
+   ? diasRango.find(d => normalizarSede(d.label) === normDeseado)
+   : null;
+ selectEl.value = encontrado ? encontrado.label : VALOR_TODOS_LOS_DIAS;
+}
+
+export function actualizarOpcionesFechasSedes(){
+ const startInput = document.getElementById("fDateStart");
+ const endInput = document.getElementById("fDateEnd");
+ if(startInput && endInput){
+   endInput.min = startInput.value || "";
+ }
+ const dias = diasDeInputModal();
+ document.querySelectorAll("#fLocationFixedList .sede-detail-select, #fLocationCustomList .sede-custom-detail").forEach(sel => {
+   const prev = sel.dataset.pendingValue !== undefined ? sel.dataset.pendingValue : sel.value;
+   delete sel.dataset.pendingValue;
+   poblarSelectFechasSede(sel, dias, prev);
+ });
+}
+
+export function renderFixedSedes(){
+ const container = document.getElementById("fLocationFixedList");
+ if(!container) return;
+ const dias = diasDeInputModal();
+ container.innerHTML = SEDES_FIJAS.map(sede => `
+  <div class="sede-item" data-sede="${escapeHtml(sede)}">
+   <label class="sede-check-label">
+    <input type="checkbox" class="sede-checkbox" value="${escapeHtml(sede)}">
+    <span>${escapeHtml(sede)}</span>
+   </label>
+   <select class="sede-detail-select" aria-label="Fecha para ${escapeHtml(sede)}" hidden disabled></select>
+  </div>
+ `).join("");
+ container.querySelectorAll(".sede-detail-select").forEach(sel => poblarSelectFechasSede(sel, dias));
+}
+
+export function addCustomSedeRow(name = "", detail = "", focusInput = false){
+ if(!isAdmin()){ alert(PERMISSION_MSG); return; }
+ const customList = document.getElementById("fLocationCustomList");
+ if(!customList) return;
+ customList.hidden = false;
+ const row = document.createElement("div");
+ row.className = "sede-custom-row";
+ row.innerHTML = `
+  <input type="text" class="sede-custom-name" maxlength="150" placeholder="Nombre de la sede (ej: Salud)" value="${escapeHtml(name)}">
+  <select class="sede-custom-detail" aria-label="Fecha para otra sede"></select>
+  <button type="button" class="delete note-remove sede-custom-remove" data-action="remove-custom-sede" title="Quitar sede" aria-label="Quitar sede">Quitar</button>
+ `;
+ customList.appendChild(row);
+ poblarSelectFechasSede(row.querySelector(".sede-custom-detail"), diasDeInputModal(), detail);
+ if(focusInput) row.querySelector(".sede-custom-name")?.focus();
+}
+
+export function syncLocationPermissions(){
+ const admin = isAdmin();
+ const addBtn = document.getElementById("fAddCustomSedeBtn");
+ const customList = document.getElementById("fLocationCustomList");
+ if(addBtn) addBtn.hidden = !admin;
+ if(customList){
+   customList.hidden = !admin;
+   if(!admin) customList.innerHTML = "";
+ }
+}
+
+export function setLocationFieldValue(locationValue = ""){
+ const admin = isAdmin();
+ const startInput = document.getElementById("fDateStart");
+ const endInput = document.getElementById("fDateEnd");
+ if(startInput && endInput) endInput.min = startInput.value || "";
+ renderFixedSedes();
+ const customList = document.getElementById("fLocationCustomList");
+ if(customList) customList.innerHTML = "";
+ syncLocationPermissions();
+
+ const dias = diasDeInputModal();
+ const entries = parseLocationEntries(locationValue);
+ const fixedItems = [...document.querySelectorAll("#fLocationFixedList .sede-item")];
+
+ entries.forEach(({ name, detail }) => {
+   const normName = normalizarSede(name);
+   const fixedItem = fixedItems.find(el => normalizarSede(el.dataset.sede) === normName);
+   if(fixedItem){
+     const cb = fixedItem.querySelector(".sede-checkbox");
+     const detailSelect = fixedItem.querySelector(".sede-detail-select");
+     cb.checked = true;
+     fixedItem.classList.add("is-selected");
+     detailSelect.hidden = false;
+     poblarSelectFechasSede(detailSelect, dias, detail);
+   } else if(admin){
+     addCustomSedeRow(name, detail, false);
+   }
+ });
 }
 
 export function openActivityModal(id=null){
@@ -75,7 +190,7 @@ export function openActivityModal(id=null){
  }
  document.getElementById("fDateStart").value=dateStartVal;
  document.getElementById("fDateEnd").value=dateEndVal;
- document.getElementById("fLocation").value=a?.location||"";
+ setLocationFieldValue(a?.location||"");
  document.getElementById("fResponsible").value=a?.responsible||"";
  document.getElementById("fStatus").value=a?.status||"pending";
  document.getElementById("activityModal").classList.add("show");
@@ -166,8 +281,9 @@ export function tarjetaHTML(a, abierta=false){
        <div class="notes-log">
           ${renderNotesLog(id, a.notes)}
        </div>
+       ${canManageNotes() ? `
        <textarea id="new-note-${id}" class="notes" placeholder="Escribe una nueva nota o pega un link aquí..."></textarea>
-       <button class="add" style="margin-top:8px" data-action="append-note" data-id="${id}">Guardar en el registro</button>
+       <button class="add" style="margin-top:8px" data-action="append-note" data-id="${id}">Guardar en el registro</button>` : ''}
       </div>
 
       <div>
@@ -230,11 +346,30 @@ export function iniciarInterfaz(){
    case "cal-dia": abrirDetalle({ tipo: "dia", fecha: Number(el.dataset.fecha) }, el); break;
    case "cal-actividad": abrirDetalle({ tipo: "actividad", id: Number(el.dataset.id) }, el); break;
    case "cal-cerrar-detalle": cerrarDetalle(); break;
+   case "add-custom-sede": addCustomSedeRow("", "", true); break;
+   case "remove-custom-sede": { const row = el.closest(".sede-custom-row"); if(row) row.remove(); break; }
   }
  });
  // ---------------------------------------------
 
  document.getElementById("activityModal").addEventListener("click",e=>{if(e.target.id==="activityModal")closeActivityModal();});
+ renderFixedSedes();
+ document.getElementById("fDateStart").addEventListener("change", actualizarOpcionesFechasSedes);
+ document.getElementById("fDateEnd").addEventListener("change", actualizarOpcionesFechasSedes);
+ document.getElementById("fLocationFixedList").addEventListener("change", e => {
+   const cb = e.target.closest(".sede-checkbox");
+   if(!cb) return;
+   const item = cb.closest(".sede-item");
+   const detailSelect = item.querySelector(".sede-detail-select");
+   item.classList.toggle("is-selected", cb.checked);
+   detailSelect.hidden = !cb.checked;
+   if(cb.checked){
+     poblarSelectFechasSede(detailSelect, diasDeInputModal(), detailSelect.value);
+     if(!detailSelect.disabled) detailSelect.focus();
+   } else {
+     poblarSelectFechasSede(detailSelect, diasDeInputModal(), "");
+   }
+ });
 
  // --- MODAL DE ACCESO: envío, cierre y teclado (Esc y foco atrapado) ---
  const loginModal = document.getElementById("loginModal");

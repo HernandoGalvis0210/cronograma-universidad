@@ -15,6 +15,11 @@ export function isReviewer(){
 // Crear, subir archivos y agregar notas: todos.
 export function canDelete(){ return isReviewer(); }
 export function canEdit(){ return isReviewer(); }
+export function isAdmin(){
+  if(!estado.currentSession || !estado.currentRole) return false;
+  const rol = normalizeUser(estado.currentRole);
+  return rol === "administrador" || rol === "administracion";
+}
 
 export async function loadRole(session){
   if(!session) return null;
