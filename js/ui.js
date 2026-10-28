@@ -21,19 +21,20 @@ export function icon(nombre){
 // ------------------------------------
 
 // --- CONFIGURACIÓN DE TEMA OSCURO ---
-// El botón muestra el tema al que se cambia (sol en oscuro, luna en claro).
+// El icono muestra el tema actual (sol en claro, luna en oscuro); aria-pressed indica si el oscuro está activo.
 export function paintThemeButton(){
   const isDark = document.body.classList.contains('dark-mode');
   const btn = document.getElementById('themeToggle');
   const label = isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
-  btn.innerHTML = icon(isDark ? 'sol' : 'luna');
+  btn.innerHTML = icon(isDark ? 'luna' : 'sol');
   btn.title = label;
   btn.setAttribute('aria-label', label);
+  btn.setAttribute('aria-pressed', String(isDark));
 }
 export function toggleTheme() {
   document.body.classList.toggle('dark-mode');
   const isDark = document.body.classList.contains('dark-mode');
-  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) { /* sin almacenamiento: dura hasta recargar */ }
   paintThemeButton();
 }
 // ------------------------------------

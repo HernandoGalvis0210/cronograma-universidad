@@ -20,7 +20,7 @@ css/
   base.css        caja, body, header, contenedor, botones, campos y foco
   splash.css      animaciones de entrada y salida del splash
   componentes.css filtros, resumen, línea de tiempo, tarjetas, notas, archivos, modales, acceso
-  responsive.css  media queries 1024/768/480/390/360 px (siempre la última)
+  responsive.css  media queries 1024/768/600/480/390/360 px (siempre la última)
 js/
   config.js       cliente de Supabase, isPermissionError, errorMessage, runWrite
   estado.js       constantes (subida, mensajes, textos) y objeto `estado` compartido

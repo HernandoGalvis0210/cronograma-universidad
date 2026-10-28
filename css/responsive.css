@@ -1,4 +1,4 @@
-/* Ajustes por ancho: 1024, 768, 480, 390 y 360 px. Va al final para ganar en la cascada. */
+/* Ajustes por ancho: 1024, 768, 600, 480, 390 y 360 px. Va al final para ganar en la cascada. */
 @media(max-width:1024px) and (min-width:769px){
  .detail-grid{gap:24px;}
  .card-head{padding:21px 20px;}
@@ -8,6 +8,12 @@
  .detail-grid{grid-template-columns:minmax(0,1fr);gap:24px;}
  .details{padding:20px;}
  .card-head-content,.detail-grid>div{min-width:0;}
+}
+
+/* El botón de tema va en la fila de acciones, debajo del título, y la fila envuelve si no cabe. */
+@media(max-width:600px){
+ .header-flex{flex-direction:column;align-items:flex-start;}
+ .header-actions{width:100%;justify-content:flex-start;}
 }
 
 @media(max-width:480px){
@@ -20,9 +26,6 @@
  .activity{padding-left:38px;}
  .timeline:before{left:9px;}
  .dot{left:-2px;width:23px;height:23px;border-width:5px;}
- .header-flex{flex-direction:column;align-items:flex-start;}
- .theme-btn{position:absolute;top:34px;right:18px;}
- .header-actions{width:100%;justify-content:flex-start;}
  .card-head{flex-direction:column;gap:11px;padding:18px 15px;}
  .card-head-content{width:100%;}
  .badge{align-self:flex-start;min-width:0;max-width:100%;}
@@ -56,7 +59,6 @@
 @media(max-width:360px){
  header{padding:32px 16px;}
  main{padding-right:10px;padding-left:10px;}
- .theme-btn{top:28px;right:14px;}
  .card-head,.details,.card-foot{padding-right:12px;padding-left:12px;}
  .file-actions button{flex-basis:100%;}
  .auth-btn{padding:8px 11px;font-size:.78rem;}
