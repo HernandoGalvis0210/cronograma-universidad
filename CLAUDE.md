@@ -33,6 +33,8 @@ js/
   calendario.js   vista (localStorage 'vista'), cuadrícula del mes, rangos por semanas, detalle del día, teclado
   main.js         arranque: splash, tema guardado, onAuthStateChange, realtime, primera carga
 supabase/         SQL de roles y RLS + guía (se aplica a mano en el panel)
+docs/             GUIA-TRASPASO.md e img/ (capturas del README, datos ficticios)
+README.md         portada del repositorio
 ```
 
 - Los CSS se enlazan en el orden de arriba: el orden importa en la cascada.
@@ -44,6 +46,19 @@ supabase/         SQL de roles y RLS + guía (se aplica a mano en el panel)
 - HTML: header, toolbar de filtros (con el selector `.vista-selector`), stats, `#timeline`, `#calendario`, modales `#calDetalle` (antes que el formulario, para que "Editar actividad" quede encima), `#activityModal` y `#loginModal`.
 - Módulos: el estado que antes eran variables globales (`activities`, `filesData`, `currentFilter`, `editingId`, `openCards`, `currentSession`, `currentRole`…) vive en `estado` (`estado.activities`, etc.). Las importaciones circulares entre módulos son intencionadas y seguras: ningún módulo usa otro al evaluarse, solo dentro de funciones; los efectos de arranque están en `main.js`.
 - `window.supabaseClient` y `window.activities` (solo lectura) existen a propósito para las pruebas de consola de `supabase/LEEME.md`.
+
+## Documentación
+
+| Documento | Público | Contenido |
+|---|---|---|
+| `README.md` | Quien visita el repositorio | Descripción, capturas, funcionalidades, **tabla única de roles y permisos**, arquitectura, ejecución local, configuración, base de datos, despliegue y flujo de Git |
+| `docs/GUIA-TRASPASO.md` | Quien hereda el cargo (no técnico) | Servicios y accesos, cuentas de revisores, cambio de persona, respaldos, qué hacer si algo falla, tareas periódicas y seguridad. Datos pendientes marcados con `[COMPLETAR]` |
+| `supabase/LEEME.md` | Quien aplica el SQL | Pasos para aplicar y probar `roles.sql` y `roles-2.sql` |
+| `CLAUDE.md` | Desarrollo | Este archivo: detalle técnico y convenciones |
+
+- Si cambian los permisos (RLS, trigger o lo que muestra la página), actualizar la tabla de "Roles y permisos" del README (es la única; no repetirla en otros documentos) y la de este archivo.
+- Las capturas de `docs/img/` se generan con datos ficticios y Supabase simulado (nunca con datos reales) y deben pesar menos de 300 KB.
+- Los documentos no llevan claves, contraseñas, correos personales ni nombres de personas o instituciones.
 
 ## Supabase
 
@@ -124,8 +139,10 @@ Fusionadas en `main` (el SQL de 7 y 9 hay que aplicarlo a mano en el panel):
 
 11. Reorganización en carpetas (ver Estructura): logo a `assets/`, CSS a `css/`, JS a módulos ES en `js/`, `onclick` en línea sustituidos por `data-action` con delegación, supabase-js fijado a 2.118.0 y `.gitignore`.
 
-En curso (rama `feature/vista-calendario`, sin cambios en Supabase):
 12. Vista de calendario mensual (ver abajo).
+
+En curso (rama `docs/readme`, solo documentación):
+13. README, guía de traspaso y capturas con datos ficticios.
 
 ## Vista de calendario
 
