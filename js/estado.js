@@ -34,7 +34,10 @@ export const NO_ROWS_MSG = "No se aplicó el cambio: no tienes permisos o el reg
 
 // --- TEXTOS DE ESTADO Y ROL ---
 export const statusText={pending:"Pendiente", approved:"Aprobado", done:"Completada"};
-export const roleText={superior:"Superior", academico:"Académico", administracion:"Administración"};
+export const roleText={superior:"Superior", academico:"Académico", administracion:"Administración", administrador:"Administrador"};
+export const SEDES_FIJAS = ["Villa del Rosario", "Cúcuta", "Pamplona"];
+export const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+export const VALOR_TODOS_LOS_DIAS = "__todos__";
 // ------------------------------------
 
 // --- VISTAS ---

@@ -170,7 +170,27 @@ body.splash-active{overflow:hidden;}
      <div><label>Fecha inicio</label><input type="date" id="fDateStart"></div>
      <div><label>Fecha fin (opcional)</label><input type="date" id="fDateEnd"></div>
    </div>
-   <div><label>Sedes / Desglose de fechas</label><input id="fLocation" maxlength="1000" placeholder="Ej. Cúcuta 14, Villa 15, Pamplona 16"></div>
+   <div>
+     <label id="fLocationLabel">Sede(s)</label>
+     <div id="fLocationContainer" class="sedes-selector" role="group" aria-labelledby="fLocationLabel">
+       <div id="fLocationFixedList" class="sedes-fixed-list">
+         <div class="sede-item" data-sede="Villa del Rosario">
+           <label class="sede-check-label"><input type="checkbox" class="sede-checkbox" value="Villa del Rosario"><span>Villa del Rosario</span></label>
+           <select class="sede-detail-select" aria-label="Fecha para Villa del Rosario" hidden disabled><option value="">Selecciona primero la fecha de inicio</option></select>
+         </div>
+         <div class="sede-item" data-sede="Cúcuta">
+           <label class="sede-check-label"><input type="checkbox" class="sede-checkbox" value="Cúcuta"><span>Cúcuta</span></label>
+           <select class="sede-detail-select" aria-label="Fecha para Cúcuta" hidden disabled><option value="">Selecciona primero la fecha de inicio</option></select>
+         </div>
+         <div class="sede-item" data-sede="Pamplona">
+           <label class="sede-check-label"><input type="checkbox" class="sede-checkbox" value="Pamplona"><span>Pamplona</span></label>
+           <select class="sede-detail-select" aria-label="Fecha para Pamplona" hidden disabled><option value="">Selecciona primero la fecha de inicio</option></select>
+         </div>
+       </div>
+       <div id="fLocationCustomList" class="sedes-custom-list" hidden></div>
+       <button type="button" id="fAddCustomSedeBtn" class="cancel sede-add-btn" data-action="add-custom-sede" hidden>+ Agregar otra sede</button>
+     </div>
+   </div>
    <div><label>Responsable(s)</label><input id="fResponsible" maxlength="500" placeholder="Nombre del responsable"></div>
    <div id="fStatusField">
      <label for="fStatus">Estado</label>

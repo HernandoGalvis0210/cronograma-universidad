@@ -23,7 +23,7 @@
 .cal-grid{display:grid;gap:6px;}
 .cal-grid.cal-cambio{animation:cal-entrada .25s ease-out;}
 @keyframes cal-entrada{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
-.cal-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:30px repeat(3,22px) 20px;column-gap:6px;row-gap:3px;}
+.cal-semana{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));grid-template-rows:30px repeat(3,minmax(22px,auto)) 20px;column-gap:6px;row-gap:3px;}
 .cal-semana.cal-encabezado{grid-template-rows:auto;}
 .cal-dia-semana{padding:2px 8px 4px;color:var(--muted);font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;}
 .cal-celda{display:flex;grid-row:1/-1;min-width:0;}
@@ -45,6 +45,11 @@
 .cal-etiqueta:hover{filter:brightness(1.06) saturate(1.05);box-shadow:var(--shadow-md);}
 .cal-etiqueta.sigue-antes{margin-left:0;border-left-width:0;border-top-left-radius:0;border-bottom-left-radius:0;}
 .cal-etiqueta.sigue-despues{margin-right:0;border-right-width:0;border-top-right-radius:0;border-bottom-right-radius:0;}
+.cal-etiqueta.cal-etiqueta-continua{display:flex;flex-direction:column;height:auto;padding:0;}
+.cal-etiqueta-titulo{padding:2px 8px;font-size:.72rem;font-weight:800;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-etiqueta-sedes{display:grid;grid-template-columns:repeat(var(--cal-cols,1),minmax(0,1fr));border-top:1px solid color-mix(in srgb,var(--cal-texto) 22%,transparent);background:color-mix(in srgb,var(--cal-texto) 8%,var(--cal-fondo));}
+.cal-etiqueta-sede-dia{min-width:0;padding:1px 7px 2px;font-size:.65rem;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-etiqueta-sede-dia+.cal-etiqueta-sede-dia{border-left:1px solid color-mix(in srgb,var(--cal-texto) 22%,transparent);}
 .cal-mas{position:relative;z-index:1;align-self:center;grid-row:5;min-width:0;margin:0 8px;overflow:hidden;color:var(--secondary);font-size:.74rem;font-weight:800;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
 .cal-mas:hover{text-decoration:underline;}
 
