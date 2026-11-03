@@ -19,3 +19,6 @@ screenshots/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Scripts locales de apoyo
+ask-argon.bat

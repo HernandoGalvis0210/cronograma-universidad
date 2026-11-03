@@ -52,6 +52,7 @@
 .cal-etiqueta-sede-dia+.cal-etiqueta-sede-dia{border-left:1px solid color-mix(in srgb,var(--cal-texto) 22%,transparent);}
 .cal-mas{position:relative;z-index:1;align-self:center;grid-row:5;min-width:0;margin:0 8px;overflow:hidden;color:var(--secondary);font-size:.74rem;font-weight:800;white-space:nowrap;text-overflow:ellipsis;cursor:pointer;}
 .cal-mas:hover{text-decoration:underline;}
+.cal-etiqueta,.cal-etiqueta-titulo,.cal-etiqueta-sede-dia,.cal-mas{max-width:100%;min-width:0;box-sizing:border-box;}
 
 /* Leyenda (el color no es la única señal) y aviso de actividades sin fecha válida */
 .cal-leyenda{display:flex;flex-wrap:wrap;gap:8px 18px;margin:16px 0 0;padding:0;list-style:none;color:var(--muted);font-size:.82rem;font-weight:700;}
@@ -76,7 +77,7 @@
 .cal-puntos{display:none;flex-wrap:wrap;justify-content:center;gap:3px;}
 .cal-punto{width:8px;height:8px;background:var(--cal-fondo);border:1px solid var(--cal-borde);border-radius:50%;}
 
-@media(max-width:600px){
+@media(max-width:768px){
  .vista-selector{flex:1 1 100%;margin-left:0;}
  .toolbar .vista-selector button{flex:1 1 0;}
  .calendario{padding:12px;}
@@ -85,7 +86,7 @@
  .cal-grid{gap:4px;}
  .cal-semana{grid-template-rows:auto;column-gap:4px;}
  .cal-celda{grid-row:1;}
- .cal-etiqueta,.cal-mas{display:none;}
+ .cal-etiqueta,.cal-etiqueta.cal-etiqueta-continua,.cal-mas{display:none!important;}
  .cal-dia{align-items:center;gap:5px;min-height:52px;padding:5px 2px;}
  .cal-dia-semana{padding:2px 0 4px;font-size:.64rem;letter-spacing:.03em;text-align:center;}
  .cal-puntos{display:flex;}
