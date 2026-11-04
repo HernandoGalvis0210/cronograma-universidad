@@ -20,7 +20,7 @@ css/
   base.css        caja, body, header, contenedor, botones, campos y foco
   splash.css      animaciones de entrada y salida del splash
   componentes.css filtros, resumen, línea de tiempo, tarjetas, notas, archivos, modales, acceso
-  calendario.css  selector Lista | Calendario, mes, etiquetas, puntos, leyenda, detalle (con sus propios 600 px y reduced-motion)
+  calendario.css  selector Lista | Calendario, mes, etiquetas, puntos, leyenda, detalle (con sus propios 768 px y reduced-motion)
   responsive.css  media queries 1024/768/600/480/390/360 px (siempre la última)
 js/
   config.js       cliente de Supabase, isPermissionError, errorMessage, runWrite
@@ -118,6 +118,8 @@ Canal `realtime_sync` escucha `*` en ambas tablas y vuelve a llamar a `fetchData
 - Estilo de código: CSS compacto en una línea por regla; JS sin framework, `async/await` con `supabaseClient`. **No hay `onclick`/`onchange` en línea** (con módulos no ven las funciones): todo control lleva `data-action` y lo despacha un listener delegado (ver abajo).
 - Al insertar datos en HTML usar siempre `escapeHtml()`. Los controles llevan `data-action` (+ `data-id` numérico en las tarjetas) y los despachan los listeners delegados de `iniciarInterfaz()` en `js/ui.js`: `delegarTarjetas()` en cada caja con tarjetas (`#timeline` y `#calDetalleLista`) y el de `document` (tema, Nueva actividad, Cancelar/Guardar del formulario, vista y acciones `cal-*` del calendario). Para nuevas acciones, añadir un `case` ahí en lugar de interpolar datos en atributos.
 
+- Herramienta local: `ask-argon.bat "<prompt>"` (en la raíz, ignorado por git) permite pedirle a Argon código extenso o tareas repetitivas. Todo lo que devuelva se audita antes de aplicarlo: revisar que respete estas convenciones, la accesibilidad (foco visible, `aria-*`) y la cascada de los CSS.
+
 ## Fases
 
 Cumplidas:
@@ -148,7 +150,7 @@ En curso (rama `docs/readme`, solo documentación):
 
 - Selector "Lista | Calendario" en la toolbar (`aria-pressed`); `estado.vista` se guarda en `localStorage` (`'vista'`, en try/catch); por defecto, Lista. Con Calendario, `render()` vacía `#timeline` (así los `id` de las tarjetas no se repiten en el detalle) y llama a `renderCalendario()`. Mismos datos y mismo filtro (`actividadesFiltradas()`), sin consultas nuevas; se actualiza con cada `render()` (realtime, crear, editar, estado, eliminar).
 - Fechas: `partesFecha()` (en `actividades.js`, la misma regex que ordena la lista) + validación del día real; un rango es `dd/mm/aaaa - dd/mm/aaaa` (si el fin no vale, solo el inicio). Fechas como `{ y, m, d }` construidas con números (nunca `new Date("texto")`); claves `aaaammdd` en `data-fecha`. Meses y días en arreglos fijos (sin Intl). Semana de lunes a domingo; "hoy" es la fecha local.
-- Ancho: cada tramo de actividad (un rango se parte por semanas) es una etiqueta en un carril; `MAX_CARRILES` = 3 y el resto va en "+N más". Hasta 600 px: puntos por estado en cada día. Las etiquetas y "+N más" son `aria-hidden` (atajos para el puntero); el acceso accesible es el botón de cada día (`aria-label` "27 de octubre de 2026, 2 actividades") en una cuadrícula `role="grid"` con tabindex itinerante y flechas/Inicio/Fin/RePág/AvPág.
+- Ancho: cada tramo de actividad (un rango se parte por semanas) es una etiqueta en un carril; `MAX_CARRILES` = 3 y el resto va en "+N más". Hasta 768 px: puntos por estado en cada día (las etiquetas, incluidas las continuas, se ocultan con `!important` por la especificidad de `.cal-etiqueta-continua`). Las etiquetas y "+N más" son `aria-hidden` (atajos para el puntero); el acceso accesible es el botón de cada día (`aria-label` "27 de octubre de 2026, 2 actividades") en una cuadrícula `role="grid"` con tabindex itinerante y flechas/Inicio/Fin/RePág/AvPág.
 - Detalle (`#calDetalle`): reutiliza `tarjetaHTML(a, true)` y la delegación de las tarjetas, así que acciones y permisos son los de la lista. Se repinta en cada `render()` conservando el foco y lo escrito en las notas; Esc, clic fuera y foco atrapado; al cerrar, el foco vuelve al día.
 - Actividades sin fecha válida: aviso debajo del calendario con acceso a la Lista.
 
